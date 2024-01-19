@@ -1,5 +1,7 @@
 package repo
 
+//go:generate mockgen -source=repo.go -destination=../../../testhelper/mock/mongo_repo.go -package=mock_test -mock_names=IRepo=MockMongoIRepo,ICursor=MockMongoICursor IRepo ICursor
+
 import (
 	"context"
 	"go.mongodb.org/mongo-driver/mongo"

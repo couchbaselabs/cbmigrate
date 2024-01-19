@@ -16,7 +16,7 @@ type Mongo struct {
 
 func NewMongo(db repo.IRepo) common.ISource {
 	return &Mongo{
-		db: repo.NewRepo(),
+		db: db,
 	}
 }
 
@@ -26,6 +26,7 @@ func (m *Mongo) Init(opts *option.Options) error {
 }
 
 func (m *Mongo) StreamData(ctx context.Context, mChan chan map[string]interface{}) error {
+	defer close(mChan)
 	opts := options.Find().SetSort(bson.D{{"_id", 1}})
 	cursor, err := m.db.Find(m.collection, ctx, bson.M{}, opts)
 	if err != nil {
