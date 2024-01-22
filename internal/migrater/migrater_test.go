@@ -1,1 +1,133 @@
-package migrater
+package migrater_test
+
+import (
+	"context"
+	"errors"
+	cOpts "github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
+	migrater2 "github.com/couchbaselabs/cbmigrate/internal/migrater"
+	mOpts "github.com/couchbaselabs/cbmigrate/internal/mongo/option"
+	"github.com/couchbaselabs/cbmigrate/internal/option"
+	mock_test "github.com/couchbaselabs/cbmigrate/testhelper/mock"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"go.uber.org/mock/gomock"
+	"reflect"
+)
+
+var _ = Describe("migrate", func() {
+	Describe("test data migration", func() {
+		var (
+			ctrl        *gomock.Controller
+			source      *mock_test.MockISource
+			destination *mock_test.MockIDestination
+			migrater    migrater2.IMigrate
+		)
+		opts := &option.Options{
+			CBOpts: &cOpts.Options{
+				Cluster:   "cluster-url",
+				NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col"},
+				BatchSize: 100,
+			},
+			MOpts: &mOpts.Options{Namespace: &mOpts.Namespace{Collection: "test_col"}},
+		}
+		testData := []map[string]interface{}{{"a": 1}, {"b": 2}, {"c": 3}, {"d": 4}}
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+			source = mock_test.NewMockISource(ctrl)
+			destination = mock_test.NewMockIDestination(ctrl)
+			migrater = migrater2.NewMigrator(source, destination)
+		})
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+		Context("success", func() {
+			It("data copied to destination", func() {
+				source.EXPECT().Init(opts).Return(nil)
+				destination.EXPECT().Init(opts).Return(nil)
+				source.EXPECT().StreamData(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, stream chan map[string]interface{}) error {
+					for _, d := range testData {
+						stream <- d
+					}
+					return nil
+				})
+				i := 0
+				destination.EXPECT().ProcessData(gomock.Any()).Times(4).DoAndReturn(func(doc map[string]interface{}) error {
+					if !reflect.DeepEqual(doc, testData[i]) {
+						return errors.New("process data don't match with source data")
+					}
+					i++
+					return nil
+				})
+				destination.EXPECT().Complete().Return(nil)
+				err := migrater.Copy(opts)
+				Expect(err).To(BeNil())
+			})
+		})
+		Context("failure", func() {
+			It("source connection initialization error", func() {
+				sourceError := errors.New("error occurred in source connection initialization")
+				source.EXPECT().Init(opts).Return(sourceError)
+				err := migrater.Copy(opts)
+				Expect(err).To(Equal(sourceError))
+			})
+			It("source connection initialization error", func() {
+				destError := errors.New("error occurred in source connection initialization")
+				source.EXPECT().Init(opts).Return(nil)
+				destination.EXPECT().Init(opts).Return(destError)
+				err := migrater.Copy(opts)
+				Expect(err).To(Equal(destError))
+			})
+			It("error while streaming the data", func() {
+				streamError := errors.New("error occurred while streaming the data")
+				source.EXPECT().Init(opts).Return(nil)
+				destination.EXPECT().Init(opts).Return(nil)
+				source.EXPECT().StreamData(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, stream chan map[string]interface{}) error {
+					for _, d := range testData[0:2] {
+						stream <- d
+					}
+					return streamError
+				})
+				i := 0
+				destination.EXPECT().ProcessData(gomock.Any()).Times(2).DoAndReturn(func(doc map[string]interface{}) error {
+					if !reflect.DeepEqual(doc, testData[i]) {
+						return errors.New("process data don't match with source data")
+					}
+					i++
+					return nil
+				})
+				destination.EXPECT().Complete().Return(nil)
+				err := migrater.Copy(opts)
+				Expect(err).To(Equal(errors.Join(streamError)))
+			})
+
+			It("error while processing the data", func() {
+				dataProcessError := errors.New("error occurred while processing the data")
+				contextCancelledError := errors.New("context cancelled error")
+				source.EXPECT().Init(opts).Return(nil)
+				destination.EXPECT().Init(opts).Return(nil)
+				source.EXPECT().StreamData(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, stream chan map[string]interface{}) error {
+					defer GinkgoRecover()
+					for _, d := range testData {
+						stream <- d
+					}
+					<-ctx.Done()
+					return contextCancelledError
+				})
+				i := 0
+				destination.EXPECT().ProcessData(gomock.Any()).Times(2).DoAndReturn(func(doc map[string]interface{}) error {
+					if !reflect.DeepEqual(doc, testData[i]) {
+						return errors.New("process data don't match with source data")
+					}
+					if i == 1 {
+						return dataProcessError
+					}
+					i++
+					return nil
+				})
+				err := migrater.Copy(opts)
+				Expect(err.Error()).To(Equal(errors.Join(dataProcessError, contextCancelledError).Error()))
+			})
+
+		})
+	})
+})

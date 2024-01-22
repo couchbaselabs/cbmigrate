@@ -50,10 +50,10 @@ func (m Migrate) Copy(opts *option.Options) error {
 	})
 	g.Wait()
 	if dErr != nil {
-		err = errors.Join(dErr)
+		err = errors.Join(err, dErr)
 	}
 	if sErr != nil {
-		err = errors.Join(sErr)
+		err = errors.Join(err, sErr)
 	}
 	return err
 }
