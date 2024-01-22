@@ -20,6 +20,7 @@ type ICursor interface {
 	Close(ctx context.Context) error
 	Next(ctx context.Context) bool
 	Decode(val interface{}) error
+	Err() error
 }
 
 type Repo struct {
@@ -55,6 +56,10 @@ func (c *Cursor) Close(ctx context.Context) error {
 
 func (c *Cursor) Next(ctx context.Context) bool {
 	return c.cursor.Next(ctx)
+}
+
+func (c *Cursor) Err() error {
+	return c.cursor.Err()
 }
 
 func (c *Cursor) Decode(val interface{}) error {

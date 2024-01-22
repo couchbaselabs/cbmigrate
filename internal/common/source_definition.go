@@ -1,5 +1,6 @@
 package common
 
+//go:generate mockgen -source=source_definition.go -destination=../../testhelper/mock/source_definition.go -package=mock_test ISource
 import (
 	"context"
 	"github.com/couchbaselabs/cbmigrate/internal/option"

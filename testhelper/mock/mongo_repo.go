@@ -127,6 +127,20 @@ func (mr *MockMongoICursorMockRecorder) Decode(val any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Decode", reflect.TypeOf((*MockMongoICursor)(nil).Decode), val)
 }
 
+// Err mocks base method.
+func (m *MockMongoICursor) Err() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Err")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Err indicates an expected call of Err.
+func (mr *MockMongoICursorMockRecorder) Err() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Err", reflect.TypeOf((*MockMongoICursor)(nil).Err))
+}
+
 // Next mocks base method.
 func (m *MockMongoICursor) Next(ctx context.Context) bool {
 	m.ctrl.T.Helper()

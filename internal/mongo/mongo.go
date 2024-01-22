@@ -26,21 +26,21 @@ func (m *Mongo) Init(opts *option.Options) error {
 }
 
 func (m *Mongo) StreamData(ctx context.Context, mChan chan map[string]interface{}) error {
-	defer close(mChan)
 	opts := options.Find().SetSort(bson.D{{"_id", 1}})
 	cursor, err := m.db.Find(m.collection, ctx, bson.M{}, opts)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer cursor.Close(context.Background())
 
-	for cursor.Next(context.TODO()) {
+	for cursor.Next(ctx) {
 		var data bson.M
-		err := cursor.Decode(&data)
+		err = cursor.Decode(&data)
 		if err != nil {
 			return err
 		}
 		mChan <- data
 	}
-	return nil
+	err = cursor.Err()
+	return err
 }

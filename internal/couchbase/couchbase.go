@@ -95,10 +95,10 @@ func (c *Couchbase) Init(opts *option.Options) error {
 	if err != nil {
 		return err
 	}
-	return c.CreateScopeAndCollectionIFNotExits()
+	return c.createScopeAndCollectionIFNotExits()
 }
 
-func (c *Couchbase) CreateScopeAndCollectionIFNotExits() error {
+func (c *Couchbase) createScopeAndCollectionIFNotExits() error {
 	foundScope := false
 	foundCollection := false
 
@@ -171,6 +171,9 @@ func (c *Couchbase) ProcessData(data map[string]interface{}) error {
 }
 
 func (c *Couchbase) Complete() (err error) {
+	if len(c.batchDocs) == 0 {
+		return nil
+	}
 	return c.UpsertData()
 }
 
