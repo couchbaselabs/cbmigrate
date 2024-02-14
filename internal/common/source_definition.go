@@ -9,4 +9,5 @@ import (
 type ISource interface {
 	Init(opts *option.Options) error
 	StreamData(context.Context, chan map[string]interface{}) error
+	GetIndexes(ctx context.Context) ([]Index, error)
 }

@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	common "github.com/couchbaselabs/cbmigrate/internal/common"
 	option "github.com/couchbaselabs/cbmigrate/internal/option"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -38,6 +39,21 @@ func NewMockISource(ctrl *gomock.Controller) *MockISource {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockISource) EXPECT() *MockISourceMockRecorder {
 	return m.recorder
+}
+
+// GetIndexes mocks base method.
+func (m *MockISource) GetIndexes(ctx context.Context) ([]common.Index, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIndexes", ctx)
+	ret0, _ := ret[0].([]common.Index)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetIndexes indicates an expected call of GetIndexes.
+func (mr *MockISourceMockRecorder) GetIndexes(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIndexes", reflect.TypeOf((*MockISource)(nil).GetIndexes), ctx)
 }
 
 // Init mocks base method.

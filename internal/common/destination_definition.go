@@ -8,4 +8,5 @@ type IDestination interface {
 	Init(opts *option.Options) error
 	ProcessData(map[string]interface{}) error
 	Complete() error
+	CreateIndexes(indexes []Index, fieldPaths IndexFieldPath) error
 }

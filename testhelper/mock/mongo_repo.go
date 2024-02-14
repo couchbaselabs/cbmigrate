@@ -62,6 +62,21 @@ func (mr *MockMongoIRepoMockRecorder) Find(collection, ctx, filter any, opts ...
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Find", reflect.TypeOf((*MockMongoIRepo)(nil).Find), varargs...)
 }
 
+// GetIndexes mocks base method.
+func (m *MockMongoIRepo) GetIndexes(ctx context.Context, collection string) ([]repo.Indexes, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIndexes", ctx, collection)
+	ret0, _ := ret[0].([]repo.Indexes)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetIndexes indicates an expected call of GetIndexes.
+func (mr *MockMongoIRepoMockRecorder) GetIndexes(ctx, collection any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIndexes", reflect.TypeOf((*MockMongoIRepo)(nil).GetIndexes), ctx, collection)
+}
+
 // Init mocks base method.
 func (m *MockMongoIRepo) Init(opts *option.Options) error {
 	m.ctrl.T.Helper()

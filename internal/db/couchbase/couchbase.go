@@ -9,6 +9,7 @@ import (
 )
 
 type DB struct {
+	*gocb.Cluster
 	*gocb.Bucket
 }
 
@@ -25,6 +26,7 @@ func (d *DB) Init(uri string, opts *option.Options) error {
 	if err != nil {
 		return err
 	}
+	d.Cluster = cluster
 	zap.S().Info("Couchbase connection successful")
 	d.Bucket = cluster.Bucket(opts.Bucket)
 	return nil

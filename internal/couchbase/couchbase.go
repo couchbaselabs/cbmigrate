@@ -192,3 +192,17 @@ func (c *Couchbase) UpsertData() error {
 	c.batchDocs = nil
 	return nil
 }
+
+func (c *Couchbase) CreateIndexes(indexes []common.Index, fieldPaths common.IndexFieldPath) error {
+	for _, index := range indexes {
+		if index.NotSupported {
+			zap.S().Errorf("%s index not supported", index.Name)
+			continue
+		}
+		err := c.db.CreateIndex(c.scope, c.collection, index, fieldPaths)
+		if err != nil {
+			zap.S().Errorf("error %#v occured while creating index %s", index.Name)
+		}
+	}
+	return nil
+}

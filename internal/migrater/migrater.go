@@ -14,6 +14,7 @@ type IMigrate interface {
 
 type Migrate struct {
 	Source      common.ISource
+	Analyzer    common.Analyzer
 	Destination common.IDestination
 }
 
@@ -28,17 +29,30 @@ func (m Migrate) Copy(opts *option.Options) error {
 		return err
 	}
 
-	var mChan = make(chan map[string]interface{}, 10000)
 	ctx, cancel := context.WithCancel(context.Background())
+
+	indexes, err := m.Source.GetIndexes(ctx)
+	m.Analyzer.Init(indexes)
+
+	var sChan = make(chan map[string]interface{}, 10000)
+	var dChan = make(chan map[string]interface{}, 10000)
 	g := errgroup.Group{}
 	var sErr, dErr error
 	g.Go(func() error {
-		sErr = m.Source.StreamData(ctx, mChan)
-		close(mChan)
+		sErr = m.Source.StreamData(ctx, sChan)
+		close(sChan)
 		return nil
 	})
 	g.Go(func() error {
-		for data := range mChan {
+		for data := range sChan {
+			m.Analyzer.AnalyzeData(data)
+			dChan <- data
+		}
+		close(dChan)
+		return nil
+	})
+	g.Go(func() error {
+		for data := range dChan {
 			dErr = m.Destination.ProcessData(data)
 			if dErr != nil {
 				cancel()
@@ -55,6 +69,12 @@ func (m Migrate) Copy(opts *option.Options) error {
 	if sErr != nil {
 		err = errors.Join(err, sErr)
 	}
+	if err != nil {
+		return err
+	}
+
+	fieldPaths := m.Analyzer.GetIndexFieldPath()
+	err = m.Destination.CreateIndexes(indexes, fieldPaths)
 	return err
 }
 

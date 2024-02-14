@@ -12,6 +12,7 @@ package mock_test
 import (
 	reflect "reflect"
 
+	common "github.com/couchbaselabs/cbmigrate/internal/common"
 	option "github.com/couchbaselabs/cbmigrate/internal/option"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -51,6 +52,20 @@ func (m *MockIDestination) Complete() error {
 func (mr *MockIDestinationMockRecorder) Complete() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Complete", reflect.TypeOf((*MockIDestination)(nil).Complete))
+}
+
+// CreateIndexes mocks base method.
+func (m *MockIDestination) CreateIndexes(indexes []common.Index) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateIndexes", indexes)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateIndexes indicates an expected call of CreateIndexes.
+func (mr *MockIDestinationMockRecorder) CreateIndexes(indexes any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIndexes", reflect.TypeOf((*MockIDestination)(nil).CreateIndexes), indexes)
 }
 
 // Init mocks base method.

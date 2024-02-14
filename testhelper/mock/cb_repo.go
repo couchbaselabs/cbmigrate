@@ -13,6 +13,7 @@ import (
 	reflect "reflect"
 
 	gocb "github.com/couchbase/gocb/v2"
+	common "github.com/couchbaselabs/cbmigrate/internal/common"
 	option "github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -52,6 +53,20 @@ func (m *MockCouchbaseIRepo) CreateCollection(scope, name string) error {
 func (mr *MockCouchbaseIRepoMockRecorder) CreateCollection(scope, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCollection", reflect.TypeOf((*MockCouchbaseIRepo)(nil).CreateCollection), scope, name)
+}
+
+// CreateIndex mocks base method.
+func (m *MockCouchbaseIRepo) CreateIndex(scope, collection string, index common.Index) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateIndex", scope, collection, index)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateIndex indicates an expected call of CreateIndex.
+func (mr *MockCouchbaseIRepoMockRecorder) CreateIndex(scope, collection, index any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIndex", reflect.TypeOf((*MockCouchbaseIRepo)(nil).CreateIndex), scope, collection, index)
 }
 
 // CreateScope mocks base method.
