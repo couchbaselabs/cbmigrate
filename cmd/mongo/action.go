@@ -23,6 +23,7 @@ func NewAction() *Action {
 		migrate: migrater.NewMigrator(
 			mongo.NewMongo(mRepo.NewRepo()),
 			couchbase.NewCouchbase(cRepo.NewRepo()),
+			mongo.NewIndexFieldAnalyzer(),
 		),
 	}
 }

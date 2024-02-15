@@ -3,7 +3,7 @@ package common
 type Index struct {
 	Name              string
 	Keys              []Key
-	PartialExpression []map[string]interface{}
+	PartialExpression map[string]interface{}
 	Unique            bool
 	Sparse            bool
 	NotSupported      bool

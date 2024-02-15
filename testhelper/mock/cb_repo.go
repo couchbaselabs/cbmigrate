@@ -56,17 +56,17 @@ func (mr *MockCouchbaseIRepoMockRecorder) CreateCollection(scope, name any) *gom
 }
 
 // CreateIndex mocks base method.
-func (m *MockCouchbaseIRepo) CreateIndex(scope, collection string, index common.Index) error {
+func (m *MockCouchbaseIRepo) CreateIndex(scope, collection string, index common.Index, fieldPath common.IndexFieldPath) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateIndex", scope, collection, index)
+	ret := m.ctrl.Call(m, "CreateIndex", scope, collection, index, fieldPath)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateIndex indicates an expected call of CreateIndex.
-func (mr *MockCouchbaseIRepoMockRecorder) CreateIndex(scope, collection, index any) *gomock.Call {
+func (mr *MockCouchbaseIRepoMockRecorder) CreateIndex(scope, collection, index, fieldPath any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIndex", reflect.TypeOf((*MockCouchbaseIRepo)(nil).CreateIndex), scope, collection, index)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIndex", reflect.TypeOf((*MockCouchbaseIRepo)(nil).CreateIndex), scope, collection, index, fieldPath)
 }
 
 // CreateScope mocks base method.

@@ -27,12 +27,17 @@ func (a *IndexFieldAnalyzer) Init(indexes []common.Index) {
 		for _, key := range index.Keys {
 			a.keys[key.Field] = nil
 		}
+		if index.PartialExpression != nil {
+			for _, key := range ExtractKeys(index.PartialExpression) {
+				a.keys[key] = nil
+			}
+		}
 	}
 }
 
 func (a *IndexFieldAnalyzer) AnalyzeData(data map[string]interface{}) {
 	for k := range a.keys {
-		if a.keys[k] == nil && a.keys[k].occurrence > 100 {
+		if a.keys[k] != nil && a.keys[k].occurrence > 100 {
 			continue
 		}
 		path, found := index.NavigatePath(k, data)
@@ -55,14 +60,18 @@ func (a *IndexFieldAnalyzer) AnalyzeData(data map[string]interface{}) {
 func (a *IndexFieldAnalyzer) GetIndexFieldPath() common.IndexFieldPath {
 	var indexKeyAlias = make(common.IndexFieldPath)
 	for field, v := range a.keys {
+		f := field
 		maxOccurrence := occurrence(0)
+		if v == nil {
+			continue
+		}
 		for path, v := range v.keys {
 			if v > maxOccurrence {
-				field = path
+				f = path
 				maxOccurrence = v
 			}
 		}
-		indexKeyAlias[field] = field
+		indexKeyAlias[field] = f
 	}
 	return indexKeyAlias
 }

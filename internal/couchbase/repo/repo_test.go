@@ -1,6 +1,7 @@
 package repo_test
 
 import (
+	"encoding/json"
 	"fmt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -15,31 +16,31 @@ var _ = Describe("couchbase repo", func() {
 		Context("success", func() {
 			It("output data should match with the test data with sparse false", func() {
 				keys := []common.Key{
-					{FieldWithArrayNotation: "k2[].n1k1[].n2k1.n3k1", Order: 1},
-					{FieldWithArrayNotation: "k2[].n1k1[].n2k1.n3k2.n4k1", Order: -1},
-					{FieldWithArrayNotation: "k2[].n1k1[].n2k2", Order: 1},
+					{Field: "k2[].n1k1[].n2k1.n3k1", Order: 1},
+					{Field: "k2[].n1k1[].n2k1.n3k2.n4k1", Order: -1},
+					{Field: "k2[].n1k1[].n2k2", Order: 1},
 				}
-				output, err := repo.GroupAndCombine(keys, false)
+				output, err := repo.GroupAndCombine(keys, true)
 				Expect(err).To(BeNil())
-				Expect(output).To(Equal("k2[].n1k1[].n2k1.n3k1 ASC INCLUDE MISSING,.n2k1.n3k2.n4k1 DESC INCLUDE MISSING,.n2k2 ASC INCLUDE MISSING"))
+				Expect(output).To(Equal("k2[].n1k1[].n2k1.n3k1 ASC INCLUDE MISSING,.n2k1.n3k2.n4k1 DESC,.n2k2 ASC"))
 			})
 			It("output data should match with the test data with sparse true", func() {
 				keys := []common.Key{
-					{FieldWithArrayNotation: "k2[].n1k1[].n2k1.n3k1", Order: 1},
-					{FieldWithArrayNotation: "k2[].n1k1[].n2k1.n3k2.n4k1", Order: -1},
-					{FieldWithArrayNotation: "k2[].n1k1[].n2k2", Order: 1},
+					{Field: "k2[].n1k1[].n2k1.n3k1", Order: 1},
+					{Field: "k2[].n1k1[].n2k1.n3k2.n4k1", Order: -1},
+					{Field: "k2[].n1k1[].n2k2", Order: 1},
 				}
-				output, err := repo.GroupAndCombine(keys, true)
+				output, err := repo.GroupAndCombine(keys, false)
 				Expect(err).To(BeNil())
 				Expect(output).To(Equal("k2[].n1k1[].n2k1.n3k1 ASC,.n2k1.n3k2.n4k1 DESC,.n2k2 ASC"))
 			})
 			It("output data should match with the test data with array in n3", func() {
 				keys := []common.Key{
-					{FieldWithArrayNotation: "k2[].n1k1[].n2k1.n3k1[].n4k1", Order: 1},
-					{FieldWithArrayNotation: "k2[].n1k1[].n2k1.n3k1[].n4k2.n5k1", Order: -1},
-					{FieldWithArrayNotation: "k2[].n1k1[].n2k1.n3k1[].n4k2", Order: 1},
+					{Field: "k2[].n1k1[].n2k1.n3k1[].n4k1", Order: 1},
+					{Field: "k2[].n1k1[].n2k1.n3k1[].n4k2.n5k1", Order: -1},
+					{Field: "k2[].n1k1[].n2k1.n3k1[].n4k2", Order: 1},
 				}
-				output, err := repo.GroupAndCombine(keys, true)
+				output, err := repo.GroupAndCombine(keys, false)
 				Expect(err).To(BeNil())
 				Expect(output).To(Equal("k2[].n1k1[].n2k1.n3k1[].n4k1 ASC,.n4k2.n5k1 DESC,.n4k2 ASC"))
 			})
@@ -47,9 +48,9 @@ var _ = Describe("couchbase repo", func() {
 		Context("failure", func() {
 			It("should return error on multiple array reference", func() {
 				keys := []common.Key{
-					{FieldWithArrayNotation: "k2[].n1k1[].n2k1.n3k1", Order: 1},
-					{FieldWithArrayNotation: "k2[].n1k1[].n2k1.n3k2.n4k1", Order: -1},
-					{FieldWithArrayNotation: "k2[].n1k1[].n2k2[]", Order: 1},
+					{Field: "k2[].n1k1[].n2k1.n3k1", Order: 1},
+					{Field: "k2[].n1k1[].n2k1.n3k2.n4k1", Order: -1},
+					{Field: "k2[].n1k1[].n2k2[]", Order: 1},
 				}
 				_, err := repo.GroupAndCombine(keys, false)
 				Expect(err).NotTo(BeNil())
@@ -60,17 +61,60 @@ var _ = Describe("couchbase repo", func() {
 	Describe("generate array expression", func() {
 		Context("success", func() {
 			It("output data should match with the test data", func() {
-				input := "k2[].n1k1[].n2k1.n3k1 ASC INCLUDE MISSING,.n2k1.n3k2.n4k1 DESC INCLUDE MISSING,.n2k2 ASC INCLUDE MISSING"
-				output := "DISTINCT ARRAY (DISTINCT ARRAY FLATTEN_KEYS(`l2Item`.`n2k1`.`n3k1` ASC INCLUDE MISSING,`l2Item`.`n2k1`.`n3k2`.`n4k1` DESC INCLUDE MISSING,`l2Item`.`n2k2` ASC INCLUDE MISSING) FOR `l2Item` IN `l1Item`.`n1k1` END) FOR `l1Item` IN `k2` END"
+				input := "k2[].n1k1[].n2k1.n3k1 ASC INCLUDE MISSING,.n2k1.n3k2.n4k1 DESC,.n2k2 ASC"
+				output := "DISTINCT ARRAY (DISTINCT ARRAY FLATTEN_KEYS(`l2Item`.`n2k1`.`n3k1` ASC INCLUDE MISSING,`l2Item`.`n2k1`.`n3k2`.`n4k1` DESC,`l2Item`.`n2k2` ASC) FOR `l2Item` IN `l1Item`.`n1k1` END) FOR `l1Item` IN `k2` END"
 				result := repo.GenerateCouchbaseArrayIndex(input)
 				Expect(result).To(Equal(output))
 			})
 			It("output data should match with the test data", func() {
-				input := "k2[].n1k1.n2k1[].n3k1.n4k1[].n5k1 ASC INCLUDE MISSING,.n5k2.n6k1.n7k1 DESC INCLUDE MISSING,.n5k3 ASC INCLUDE MISSING"
-				output := "DISTINCT ARRAY (DISTINCT ARRAY (DISTINCT ARRAY FLATTEN_KEYS(`l3Item`.`n5k1` ASC INCLUDE MISSING,`l3Item`.`n5k2`.`n6k1`.`n7k1` DESC INCLUDE MISSING,`l3Item`.`n5k3` ASC INCLUDE MISSING) FOR `l3Item` IN `l2Item`.`n3k1`.`n4k1` END) FOR `l2Item` IN `l1Item`.`n1k1`.`n2k1` END) FOR `l1Item` IN `k2` END"
+				input := "k2[].n1k1.n2k1[].n3k1.n4k1[].n5k1 ASC INCLUDE MISSING,.n5k2.n6k1.n7k1 DESC,.n5k3 ASC"
+				output := "DISTINCT ARRAY (DISTINCT ARRAY (DISTINCT ARRAY FLATTEN_KEYS(`l3Item`.`n5k1` ASC INCLUDE MISSING,`l3Item`.`n5k2`.`n6k1`.`n7k1` DESC,`l3Item`.`n5k3` ASC) FOR `l3Item` IN `l2Item`.`n3k1`.`n4k1` END) FOR `l2Item` IN `l1Item`.`n1k1`.`n2k1` END) FOR `l1Item` IN `k2` END"
 				result := repo.GenerateCouchbaseArrayIndex(input)
 				Expect(result).To(Equal(output))
 			})
+		})
+	})
+	Describe("generate partial filter expression", func() {
+		Context("success", func() {
+			It("output data should match with the test data", func() {
+				fieldPath := common.IndexFieldPath{}
+				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
+				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
+				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
+				output := "ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k1`.`n3k1` = 1) END) END"
+				fieldExpression := repo.ProcessField("k2.n1k1.n2k1.n3k1", 1, fieldPath)
+				Expect(fieldExpression).To(Equal(output))
+			})
+		})
+	})
+	Describe("generate partial filter expression", func() {
+		Context("success", func() {
+			It("output data should match with the test data", func() {
+				pfStr := `{"k1.n1k1":1, "$and":[{"k5":1},{"$or": [{"k2.n1k1.n2k1.n3k1": 5}, {"k2.n1k1.n2k2": 10}]}]}`
+				partialFilter := map[string]interface{}{}
+
+				err := json.Unmarshal([]byte(pfStr), &partialFilter)
+				if err != nil {
+					fmt.Println(err)
+				}
+				fieldPath := common.IndexFieldPath{}
+				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
+				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
+				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
+
+				output := "WHERE `k1`.`n1k1` = 1 AND (`k5` = 1 AND (ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k1`.`n3k1` = 5) END) END OR ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k2` = 10) END) END))"
+				result := repo.ConvertMongoToCouchbase(partialFilter, fieldPath)
+				fmt.Println("\n" + result)
+				fmt.Println("\n" + output)
+
+				Expect(result).To(Equal(output))
+			})
+			//It("output data should match with the test data", func() {
+			//	input := "k2[].n1k1.n2k1[].n3k1.n4k1[].n5k1 ASC INCLUDE MISSING,.n5k2.n6k1.n7k1 DESC INCLUDE MISSING,.n5k3 ASC INCLUDE MISSING"
+			//	output := "DISTINCT ARRAY (DISTINCT ARRAY (DISTINCT ARRAY FLATTEN_KEYS(`l3Item`.`n5k1` ASC INCLUDE MISSING,`l3Item`.`n5k2`.`n6k1`.`n7k1` DESC INCLUDE MISSING,`l3Item`.`n5k3` ASC INCLUDE MISSING) FOR `l3Item` IN `l2Item`.`n3k1`.`n4k1` END) FOR `l2Item` IN `l1Item`.`n1k1`.`n2k1` END) FOR `l1Item` IN `k2` END"
+			//	result := repo.GenerateCouchbaseArrayIndex(input)
+			//	Expect(result).To(Equal(output))
+			//})
 		})
 	})
 
@@ -80,32 +124,76 @@ var _ = Describe("couchbase repo", func() {
 		collection := "collection1"
 		Context("success", func() {
 			It("output data should match with the test data", func() {
-
 				index := common.Index{
 					Name: "test",
 					Keys: []common.Key{
 						{Field: "k1.n1k1", Order: 1},
-						{Field: "k2.n1k1.n2k1.n3k1", FieldWithArrayNotation: "k2[].n1k1[].n2k1.n3k1", Order: 1},
+						{Field: "k2.n1k1.n2k1.n3k1", Order: 1},
 						{Field: "k3", Order: 1},
-						{Field: "k2.n1k1.n2k1.n3k2.n4k1", FieldWithArrayNotation: "k2[].n1k1[].n2k1.n3k2.n4k1", Order: -1},
-						{Field: "k2.n1k1.n2k2", FieldWithArrayNotation: "k2[].n1k1[].n2k2", Order: 1},
+						{Field: "k2.n1k1.n2k1.n3k2.n4k1", Order: -1},
+						{Field: "k2.n1k1.n2k2", Order: 1},
 						{Field: "k4.n1k2.n2k1", Order: 1},
 					},
 					Sparse: false,
 				}
-				arrayExpression := "DISTINCT ARRAY (DISTINCT ARRAY FLATTEN_KEYS(`l2Item`.`n2k1`.`n3k1` ASC INCLUDE MISSING,`l2Item`.`n2k1`.`n3k2`.`n4k1` DESC INCLUDE MISSING,`l2Item`.`n2k2` ASC INCLUDE MISSING) FOR `l2Item` IN `l1Item`.`n1k1` END) FOR `l1Item` IN `k2` END"
+				fieldPath := common.IndexFieldPath{}
+				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
+				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
+				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
+				arrayExpression := "DISTINCT ARRAY (DISTINCT ARRAY FLATTEN_KEYS(`l2Item`.`n2k1`.`n3k1` ASC,`l2Item`.`n2k1`.`n3k2`.`n4k1` DESC,`l2Item`.`n2k2` ASC) FOR `l2Item` IN `l1Item`.`n1k1` END) FOR `l1Item` IN `k2` END"
 				fields := []string{
 					"`k1`.`n1k1` ASC INCLUDE MISSING",
 					arrayExpression,
-					"`k3` ASC INCLUDE MISSING",
-					"`k4`.`n1k2`.`n2k1` ASC INCLUDE MISSING",
+					"`k3` ASC",
+					"`k4`.`n1k2`.`n2k1` ASC",
 				}
 
 				Output := fmt.Sprintf(
-					"create index %s on `%s`.`%s`.`%s` (%s)",
+					"create index %s on `%s`.`%s`.`%s` (%s) ",
 					index.Name, bucket, scope, collection, strings.Join(fields, ","))
-				query, err := repo.CreateIndexQuery(bucket, scope, collection, index)
+				query, err := repo.CreateIndexQuery(bucket, scope, collection, index, fieldPath)
 				Expect(err).To(BeNil())
+				Expect(query).To(Equal(Output))
+			})
+			It("output data should match with the test data with partial filter", func() {
+				pfStr := `{"k1.n1k1":1, "$and":[{"k5":1},{"$or": [{"k2.n1k1.n2k1.n3k1": 5}, {"k2.n1k1.n2k2": 10}]}]}`
+				partialFilter := map[string]interface{}{}
+
+				_ = json.Unmarshal([]byte(pfStr), &partialFilter)
+
+				index := common.Index{
+					Name:              "test",
+					PartialExpression: partialFilter,
+					Keys: []common.Key{
+						{Field: "k1.n1k1", Order: 1},
+						{Field: "k2.n1k1.n2k1.n3k1", Order: 1},
+						{Field: "k3", Order: 1},
+						{Field: "k2.n1k1.n2k1.n3k2.n4k1", Order: -1},
+						{Field: "k2.n1k1.n2k2", Order: 1},
+						{Field: "k4.n1k2.n2k1", Order: 1},
+					},
+					Sparse: false,
+				}
+				fieldPath := common.IndexFieldPath{}
+				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
+				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
+				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
+				arrayExpression := "DISTINCT ARRAY (DISTINCT ARRAY FLATTEN_KEYS(`l2Item`.`n2k1`.`n3k1` ASC,`l2Item`.`n2k1`.`n3k2`.`n4k1` DESC,`l2Item`.`n2k2` ASC) FOR `l2Item` IN `l1Item`.`n1k1` END) FOR `l1Item` IN `k2` END"
+				fields := []string{
+					"`k1`.`n1k1` ASC INCLUDE MISSING",
+					arrayExpression,
+					"`k3` ASC",
+					"`k4`.`n1k2`.`n2k1` ASC",
+				}
+
+				partialExpression := "WHERE `k1`.`n1k1` = 1 AND (`k5` = 1 AND (ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k1`.`n3k1` = 5) END) END OR ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k2` = 10) END) END))"
+				Output := fmt.Sprintf(
+					"create index %s on `%s`.`%s`.`%s` (%s) %s",
+					index.Name, bucket, scope, collection, strings.Join(fields, ","), partialExpression)
+				query, err := repo.CreateIndexQuery(bucket, scope, collection, index, fieldPath)
+				Expect(err).To(BeNil())
+				fmt.Println("\n" + query)
+				fmt.Println(Output)
 				Expect(query).To(Equal(Output))
 			})
 		})
@@ -115,15 +203,22 @@ var _ = Describe("couchbase repo", func() {
 					Name: "test",
 					Keys: []common.Key{
 						{Field: "k1.n1k1", Order: 1},
-						{Field: "k2.n1k1.n2k1.n3k1", FieldWithArrayNotation: "k2[].n1k1[].n2k1.n3k1", Order: 1},
+						{Field: "k2.n1k1.n2k1.n3k1", Order: 1},
 						{Field: "k3", Order: 1},
-						{Field: "k2.n1k1.n2k1.n3k2.n4k1", FieldWithArrayNotation: "k2[].n1k1[].n2k1.n3k2.n4k1", Order: -1},
-						{Field: "k2.n1k1.n2k2", FieldWithArrayNotation: "k2[].n1k1[].n2k2", Order: 1},
-						{Field: "k4", FieldWithArrayNotation: "k4[]", Order: 1},
+						{Field: "k2.n1k1.n2k1.n3k2.n4k1", Order: -1},
+						{Field: "k2.n1k1.n2k2", Order: 1},
+						{Field: "k4", Order: 1},
 					},
 					Sparse: false,
 				}
-				_, err := repo.CreateIndexQuery(bucket, scope, collection, index)
+
+				fieldPath := common.IndexFieldPath{}
+				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
+				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
+				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
+				fieldPath["k4"] = "k4[]"
+
+				_, err := repo.CreateIndexQuery(bucket, scope, collection, index, fieldPath)
 				Expect(err).NotTo(BeNil())
 				Expect(err.Error()).To(Equal("multiple array reference"))
 			})

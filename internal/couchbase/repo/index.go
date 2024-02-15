@@ -76,9 +76,13 @@ func formatFieldReferenceWithAddtionalOptions(field string) string {
 	return strings.Join(splitString, " ")
 }
 
-// Convert MongoDB partial filter expression to Couchbase WHERE clause
+// ConvertMongoToCouchbase Convert MongoDB partial filter expression to Couchbase WHERE clause
 func ConvertMongoToCouchbase(expression map[string]interface{}, fieldPath common.IndexFieldPath) string {
-	return processExpression(expression, fieldPath)
+	exp := processExpression(expression, fieldPath)
+	if exp != "" {
+		exp = "WHERE " + exp
+	}
+	return exp
 }
 
 // Recursively process the MongoDB expression
@@ -95,7 +99,7 @@ func processExpression(expression map[string]interface{}, fieldPath common.Index
 			}
 		default:
 			// Process comparison operators
-			fieldCondition := processField(key, value, fieldPath)
+			fieldCondition := ProcessField(key, value, fieldPath)
 			if fieldCondition != "" {
 				conditions = append(conditions, fieldCondition)
 			}
@@ -139,19 +143,19 @@ func processLogicalOperator(operator string, value interface{}, fieldPath common
 }
 
 // Process individual field conditions
-func processField(field string, value interface{}, fieldPath common.IndexFieldPath) string {
+func ProcessField(field string, value interface{}, fieldPath common.IndexFieldPath) string {
 	field = fieldPath.Get(field)
 	switch v := value.(type) {
 	case map[string]interface{}:
 		return convertOperator(field, v)
 	default:
 		if strings.Index(field, "[]") > -1 {
-			conditionSuffix := fmt.Sprintf("%s %v", "=", value)
+			conditionSuffix := fmt.Sprintf("%s %#v", "=", value)
 			arrFieldExpression := GenerateArrayFilterExpression(field)
 			return fmt.Sprintf(arrFieldExpression, conditionSuffix)
 		}
 		// Handle direct equality as a special case
-		return fmt.Sprintf("`%s` = %v", field, value)
+		return fmt.Sprintf("%s = %#v", formatFieldReference(field), value)
 	}
 }
 
@@ -184,11 +188,11 @@ func convertOperator(field string, operators map[string]interface{}) string {
 		}
 		condition := ""
 		if strings.Index(field, "[]") > -1 {
-			conditionSuffix := fmt.Sprintf("%s %v", couchbaseOp, val)
+			conditionSuffix := fmt.Sprintf("%s %#v", couchbaseOp, val)
 			arrFieldExpression := GenerateArrayFilterExpression(field)
 			condition = fmt.Sprintf(arrFieldExpression, conditionSuffix)
 		}
-		condition = fmt.Sprintf("`%s` %s %v", field, couchbaseOp, val)
+		condition = fmt.Sprintf("`%s` %s %#v", field, couchbaseOp, val)
 		conditions = append(conditions, condition)
 	}
 	return strings.Join(conditions, " AND ")

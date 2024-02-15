@@ -201,8 +201,9 @@ func (c *Couchbase) CreateIndexes(indexes []common.Index, fieldPaths common.Inde
 		}
 		err := c.db.CreateIndex(c.scope, c.collection, index, fieldPaths)
 		if err != nil {
-			zap.S().Errorf("error %#v occured while creating index %s", index.Name)
+			zap.S().Errorf("error %#v occured while creating index %s", err, index.Name)
 		}
+		zap.S().Infof("index %s created successfully", index.Name)
 	}
 	return nil
 }

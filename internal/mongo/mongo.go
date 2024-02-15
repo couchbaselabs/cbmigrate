@@ -34,7 +34,7 @@ func (m *Mongo) StreamData(ctx context.Context, mChan chan map[string]interface{
 	defer cursor.Close(context.Background())
 
 	for cursor.Next(ctx) {
-		var data bson.M
+		var data map[string]interface{}
 		err = cursor.Decode(&data)
 		if err != nil {
 			return err
@@ -64,17 +64,18 @@ func (m *Mongo) GetIndexes(ctx context.Context) ([]common.Index, error) {
 		}
 		// adaptive index wild card index need support
 
-		for k, vi := range record.GetKey() {
-			v, ok := vi.(int)
+		for _, k := range record.GetKey() {
+			v, ok := k.Value.(int32)
 			if !ok {
 				index.NotSupported = true
 				break
 			}
 			index.Keys = append(index.Keys, common.Key{
-				Field: k,
-				Order: v,
+				Field: k.Key,
+				Order: int(v),
 			})
 		}
+		index.PartialExpression = record.GetPartialExpression()
 		indexes = append(indexes, index)
 	}
 	return indexes, nil

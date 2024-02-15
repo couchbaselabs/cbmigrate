@@ -8,11 +8,18 @@ import (
 	"github.com/couchbaselabs/cbmigrate/internal/common"
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
 	"github.com/couchbaselabs/cbmigrate/internal/db/couchbase"
+	"regexp"
 	"strings"
 	"time"
 )
 
 //go:generate mockgen -source=repo.go -destination=../../../testhelper/mock/cb_repo.go -package=mock_test -mock_names=IRepo=MockCouchbaseIRepo IRepo
+
+const (
+	INCLUDE_MISSSING = " INCLUDE MISSING"
+	ASC              = " ASC"
+	DESC             = " DESC"
+)
 
 type IRepo interface {
 	Init(uri string, opts *option.Options) error
@@ -80,55 +87,76 @@ func (r *Repo) CreateIndex(scope, collection string, index common.Index, fieldPa
 
 func CreateIndexQuery(bucket, scope, collection string, index common.Index, fieldPath common.IndexFieldPath) (string, error) {
 	var arrFields []common.Key
-	for _, key := range index.Keys {
+	isArrayFieldAtFistPos := false
+	for i, key := range index.Keys {
 		key.Field = fieldPath.Get(key.Field)
 		if strings.Index(key.Field, "[]") > 0 {
+			if i == 0 {
+				isArrayFieldAtFistPos = true
+			}
 			arrFields = append(arrFields, key)
 		}
 	}
-	arrayIndexExp, err := GroupAndCombine(arrFields, index.Sparse)
+	arrayIndexExp, err := GroupAndCombine(arrFields, !index.Sparse && isArrayFieldAtFistPos)
 	if err != nil {
 		return "", err
 	}
 	arrIndex := true
 	var fields []string
-	for _, key := range index.Keys {
+
+	for i, key := range index.Keys {
+		includeMissing := false
+		if i == 0 && !index.Sparse {
+			includeMissing = true
+		}
 		switch {
 		// I am grouping all the array notation fields into single flatten couchbase array index expression
-		case strings.Index(key.Field, "[]") > 0:
+		case strings.Index(fieldPath.Get(key.Field), "[]") > 0:
 			if arrIndex {
-				fields = append(fields, GenerateCouchbaseArrayIndex(arrayIndexExp))
+				keyAttribs := ""
+				if len(arrFields) == 0 {
+					keyAttribs = getLeadKeyAttr(key.Order, includeMissing)
+				}
+				field := fmt.Sprintf("%s%s", GenerateCouchbaseArrayIndex(arrayIndexExp), keyAttribs)
+				fields = append(fields, field)
 				arrIndex = false
 			}
 		default:
-			fields = append(fields, getField(key.Field, index.Sparse, key.Order))
+			fields = append(fields, getField(key.Field, includeMissing, key.Order))
 		}
 	}
+	reg := regexp.MustCompile(`[^A-Za-z0-9#_]`)
+	// Replace characters that do not match the pattern with "_"
+	name := reg.ReplaceAllString(index.Name, "_")
+	partialFilter := ConvertMongoToCouchbase(index.PartialExpression, fieldPath)
 	query := fmt.Sprintf(
-		"create index %s on `%s`.`%s`.`%s` (%s)",
-		index.Name, bucket, scope, collection, strings.Join(fields, ","))
+		"create index `%s` on `%s`.`%s`.`%s` (%s) %s",
+		name, bucket, scope, collection, strings.Join(fields, ","), partialFilter)
 	return query, nil
 }
 
-func getField(field string, sparse bool, order int) string {
-	includeMissing := "INCLUDE MISSING"
-	indexOrder := "ASC"
-	if sparse == true {
-		includeMissing = ""
+func getField(field string, includeMissing bool, order int) string {
+	return fmt.Sprintf("%s%s", formatFieldReference(field), getLeadKeyAttr(order, includeMissing))
+}
+func getLeadKeyAttr(order int, includeMissing bool) string {
+	im := INCLUDE_MISSSING
+	indexOrder := ASC
+	if !includeMissing {
+		im = ""
 	}
 	if order == -1 {
-		indexOrder = "DESC"
+		indexOrder = DESC
 	}
-	return fmt.Sprintf("%s %s %s", formatFieldReference(field), indexOrder, includeMissing)
+	return fmt.Sprintf("%s%s", indexOrder, im)
 }
 
 // GroupAndCombine array fields are combined because only one array field can be indexed in a compound index
-func GroupAndCombine(keys []common.Key, sparse bool) (string, error) {
+func GroupAndCombine(keys []common.Key, includeMissing bool) (string, error) {
 	// Assuming all keys have the same prefix for simplicity, as demonstrated in the combineStrings function
 	var prefix string
 	var combined []string
-
-	for _, key := range keys {
+	keyLen := len(keys)
+	for i, key := range keys {
 		lastIndex := strings.LastIndex(key.Field, "[]")
 		if lastIndex != -1 {
 			tempPrefix := key.Field[:lastIndex+2]
@@ -141,17 +169,11 @@ func GroupAndCombine(keys []common.Key, sparse bool) (string, error) {
 
 			suffix := key.Field[lastIndex+2:]
 
-			orderSuffix := "ASC"
-			if key.Order == -1 {
-				orderSuffix = "DESC"
+			keyAttr := ""
+			if keyLen > 1 {
+				keyAttr = getLeadKeyAttr(key.Order, includeMissing && i == 0)
 			}
-
-			missingSuffix := ""
-			if !sparse {
-				missingSuffix = " INCLUDE MISSING"
-			}
-
-			combinedPart := fmt.Sprintf("%s %s%s", suffix, orderSuffix, missingSuffix)
+			combinedPart := fmt.Sprintf("%s%s", suffix, keyAttr)
 			combined = append(combined, combinedPart)
 		}
 	}

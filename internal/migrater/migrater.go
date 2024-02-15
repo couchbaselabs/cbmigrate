@@ -78,9 +78,10 @@ func (m Migrate) Copy(opts *option.Options) error {
 	return err
 }
 
-func NewMigrator(source common.ISource, destination common.IDestination) IMigrate {
+func NewMigrator(source common.ISource, destination common.IDestination, analyzer common.Analyzer) IMigrate {
 	return Migrate{
 		Source:      source,
 		Destination: destination,
+		Analyzer:    analyzer,
 	}
 }

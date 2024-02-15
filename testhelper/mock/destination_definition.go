@@ -55,17 +55,17 @@ func (mr *MockIDestinationMockRecorder) Complete() *gomock.Call {
 }
 
 // CreateIndexes mocks base method.
-func (m *MockIDestination) CreateIndexes(indexes []common.Index) error {
+func (m *MockIDestination) CreateIndexes(indexes []common.Index, fieldPaths common.IndexFieldPath) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateIndexes", indexes)
+	ret := m.ctrl.Call(m, "CreateIndexes", indexes, fieldPaths)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateIndexes indicates an expected call of CreateIndexes.
-func (mr *MockIDestinationMockRecorder) CreateIndexes(indexes any) *gomock.Call {
+func (mr *MockIDestinationMockRecorder) CreateIndexes(indexes, fieldPaths any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIndexes", reflect.TypeOf((*MockIDestination)(nil).CreateIndexes), indexes)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIndexes", reflect.TypeOf((*MockIDestination)(nil).CreateIndexes), indexes, fieldPaths)
 }
 
 // Init mocks base method.

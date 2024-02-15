@@ -24,43 +24,49 @@ type ICursor interface {
 	Err() error
 }
 
-type Indexes bson.M
-
-func (i Indexes) GetName() string {
-	name, _ := i["name"].(string)
-	return name
-}
-func (i Indexes) GetKey() map[string]interface{} {
-	key, _ := i["key"].(map[string]interface{})
-	return key
-}
-
-func (i Indexes) IsSparse() bool {
-	sparse, _ := i["sparse"].(bool)
-	return sparse
+type Indexes struct {
+	Name                    string                 `json:"name"`
+	TwoDSphereIndexVersion  interface{}            `json:"2dsphereIndexVersion"`
+	Key                     bson.D                 `json:"key"`
+	PartialFilterExpression map[string]interface{} `json:"partialFilterExpression"`
+	Sparse                  bool                   `json:"sparse"`
+	Weights                 interface{}            `json:"weights"`
+	Collation               interface{}            `json:"collation"`
+	ExpireAfterSeconds      interface{}            `json:"expireAfterSeconds"`
 }
 
-func (i Indexes) IsText() bool {
-	sparse, _ := i["weights"].(bool)
-	return sparse
+func (i *Indexes) GetName() string {
+	return i.Name
+}
+func (i *Indexes) GetKey() bson.D {
+	return i.Key
 }
 
-func (i Indexes) IsGeoSpatial() bool {
-	sparse, _ := i["sparse"].(bool)
-	return sparse
+func (i *Indexes) GetPartialExpression() map[string]interface{} {
+	return i.PartialFilterExpression
 }
 
-func (i Indexes) IsTTL() bool {
-	_, ok := i["expireAfterSeconds"]
-	return ok
+func (i *Indexes) IsSparse() bool {
+	return i.Sparse
 }
 
-func (i Indexes) IsCustomCollationEnabled() bool {
-	_, ok := i["collation"]
-	return ok
+func (i *Indexes) IsText() bool {
+	return i.Weights != nil
 }
 
-func (i Indexes) NotSupported() bool {
+func (i *Indexes) IsGeoSpatial() bool {
+	return i.TwoDSphereIndexVersion != nil
+}
+
+func (i *Indexes) IsTTL() bool {
+	return i.ExpireAfterSeconds != nil
+}
+
+func (i *Indexes) IsCustomCollationEnabled() bool {
+	return i.Collation != nil
+}
+
+func (i *Indexes) NotSupported() bool {
 	if i.IsText() || i.IsGeoSpatial() || i.IsTTL() || i.IsCustomCollationEnabled() {
 		return true
 	}
