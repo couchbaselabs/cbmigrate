@@ -5,6 +5,7 @@ import (
 	"github.com/couchbase/gocb/v2"
 	"github.com/couchbaselabs/cbmigrate/internal/common"
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase/repo"
+	"github.com/couchbaselabs/cbmigrate/internal/index"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/zap"
@@ -193,7 +194,7 @@ func (c *Couchbase) UpsertData() error {
 	return nil
 }
 
-func (c *Couchbase) CreateIndexes(indexes []common.Index, fieldPaths common.IndexFieldPath) error {
+func (c *Couchbase) CreateIndexes(indexes []index.Index, fieldPaths index.IndexFieldPath) error {
 	for _, index := range indexes {
 		if index.NotSupported {
 			zap.S().Errorf("%s index not supported", index.Name)

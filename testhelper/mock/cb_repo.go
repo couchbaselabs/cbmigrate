@@ -13,8 +13,8 @@ import (
 	reflect "reflect"
 
 	gocb "github.com/couchbase/gocb/v2"
-	common "github.com/couchbaselabs/cbmigrate/internal/common"
 	option "github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
+	index "github.com/couchbaselabs/cbmigrate/internal/index"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -56,7 +56,7 @@ func (mr *MockCouchbaseIRepoMockRecorder) CreateCollection(scope, name any) *gom
 }
 
 // CreateIndex mocks base method.
-func (m *MockCouchbaseIRepo) CreateIndex(scope, collection string, index common.Index, fieldPath common.IndexFieldPath) error {
+func (m *MockCouchbaseIRepo) CreateIndex(scope, collection string, index index.Index, fieldPath index.IndexFieldPath) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateIndex", scope, collection, index, fieldPath)
 	ret0, _ := ret[0].(error)

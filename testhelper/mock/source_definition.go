@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	common "github.com/couchbaselabs/cbmigrate/internal/common"
+	index "github.com/couchbaselabs/cbmigrate/internal/index"
 	option "github.com/couchbaselabs/cbmigrate/internal/option"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -42,10 +42,10 @@ func (m *MockISource) EXPECT() *MockISourceMockRecorder {
 }
 
 // GetIndexes mocks base method.
-func (m *MockISource) GetIndexes(ctx context.Context) ([]common.Index, error) {
+func (m *MockISource) GetIndexes(ctx context.Context) ([]index.Index, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetIndexes", ctx)
-	ret0, _ := ret[0].([]common.Index)
+	ret0, _ := ret[0].([]index.Index)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

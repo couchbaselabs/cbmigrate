@@ -1,0 +1,42 @@
+run:
+  timeout: 5m
+  # Excluding auto-generated files can be a good idea
+  skip-files:
+    - ".*\\.gen\\.go"
+
+linters:
+  enable:
+    - gofmt
+    - govet
+#    - revive
+    - goimports
+    - gocyclo
+    - gosimple
+    - unused
+    - errcheck
+    - staticcheck
+    - ineffassign
+    - typecheck
+  disable:
+    - megacheck
+
+linters-settings:
+  govet:
+    check-shadowing: false
+  golint:
+    min-confidence: 0.8
+
+  errcheck:
+    check-type-assertions: false
+    check-blank: false
+    ignore:  "Close"
+
+issues:
+  # It's a good practice to periodically reduce the allowed maximum issues from linters and fix the codebase.
+  max-issues-per-linter: 100
+  max-same-issues: 20
+  exclude-use-default: false
+
+exclude:
+  - "Error return value of .(os\\..*|.*Close|fmt\\..*|.*Print.*|os\\..*|.*Fatal.*|.*parallel|t\\..*\\(\\)) is not checked"
+  - "comment on exported"

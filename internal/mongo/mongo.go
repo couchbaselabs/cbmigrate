@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"github.com/couchbaselabs/cbmigrate/internal/common"
+	index2 "github.com/couchbaselabs/cbmigrate/internal/index"
 	"github.com/couchbaselabs/cbmigrate/internal/mongo/repo"
 	"github.com/couchbaselabs/cbmigrate/internal/option"
 	"go.mongodb.org/mongo-driver/bson"
@@ -45,15 +46,15 @@ func (m *Mongo) StreamData(ctx context.Context, mChan chan map[string]interface{
 	return err
 }
 
-func (m *Mongo) GetIndexes(ctx context.Context) ([]common.Index, error) {
-	var indexes []common.Index
+func (m *Mongo) GetIndexes(ctx context.Context) ([]index2.Index, error) {
+	var indexes []index2.Index
 	records, err := m.db.GetIndexes(ctx, m.collection)
 	if err != nil {
 		return nil, err
 	}
 	for _, record := range records {
 
-		index := common.Index{
+		index := index2.Index{
 			Name: record.GetName(),
 		}
 		if record.NotSupported() {
@@ -70,7 +71,7 @@ func (m *Mongo) GetIndexes(ctx context.Context) ([]common.Index, error) {
 				index.NotSupported = true
 				break
 			}
-			index.Keys = append(index.Keys, common.Key{
+			index.Keys = append(index.Keys, index2.Key{
 				Field: k.Key,
 				Order: int(v),
 			})

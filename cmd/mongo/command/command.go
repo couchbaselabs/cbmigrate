@@ -3,6 +3,7 @@ package command
 import (
 	"github.com/couchbaselabs/cbmigrate/cmd/common"
 	"github.com/couchbaselabs/cbmigrate/cmd/flag"
+	"github.com/couchbaselabs/cbmigrate/internal/feature"
 
 	"github.com/spf13/cobra"
 )
@@ -34,92 +35,110 @@ var mongoDBHost = &flag.StringFlag{
 	Name:     MongoDBHost,
 	Usage:    "mongodb host to connect to (setname/host1,host2 for replica sets)",
 	Required: true,
+	Hidden:   !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBPort = &flag.StringFlag{
 	Name:     MongoDBPort,
 	Usage:    "server port (can also use --host hostname:port)",
 	Required: true,
+	Hidden:   !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBSSL = &flag.StringFlag{
-	Name:  MongoDBSSL,
-	Usage: "connect to a mongod or mongos that has ssl enabled",
+	Name:   MongoDBSSL,
+	Usage:  "connect to a mongod or mongos that has ssl enabled",
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBSSLCAFile = &flag.StringFlag{
-	Name:  MongoDBSSLCAFile,
-	Usage: "the .pem file containing the root certificate chain from the certificate authority",
+	Name:   MongoDBSSLCAFile,
+	Usage:  "the .pem file containing the root certificate chain from the certificate authority",
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBSSLPEMKeyFile = &flag.StringFlag{
-	Name:  MongoDBSSLPEMKeyFile,
-	Usage: "the .pem file containing the certificate and key",
+	Name:   MongoDBSSLPEMKeyFile,
+	Usage:  "the .pem file containing the certificate and key",
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBSSLPEMKeyPassword = &flag.StringFlag{
-	Name:  MongoDBSSLPEMKeyPassword,
-	Usage: "the password to decrypt the sslPEMKeyFile, if necessary",
+	Name:   MongoDBSSLPEMKeyPassword,
+	Usage:  "the password to decrypt the sslPEMKeyFile, if necessary",
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBSSLCRLFile = &flag.StringFlag{
-	Name:  MongoDBSSLCRLFile,
-	Usage: "the .pem file containing the certificate revocation list",
+	Name:   MongoDBSSLCRLFile,
+	Usage:  "the .pem file containing the certificate revocation list",
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBSSLFIPSMode = &flag.StringFlag{
-	Name:  MongoDBSSLFIPSMode,
-	Usage: "use FIPS mode of the installed openssl library",
+	Name:   MongoDBSSLFIPSMode,
+	Usage:  "use FIPS mode of the installed openssl library",
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBTLSInsecure = &flag.StringFlag{
-	Name:  MongoDBTLSInsecure,
-	Usage: "bypass the validation for server's certificate chain and host name",
+	Name:   MongoDBTLSInsecure,
+	Usage:  "bypass the validation for server's certificate chain and host name",
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBUsername = &flag.StringFlag{
-	Name:  MongoDBUsername,
-	Usage: "username for authentication",
+	Name:   MongoDBUsername,
+	Usage:  "username for authentication",
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBPassword = &flag.StringFlag{
-	Name:  MongoDBPassword,
-	Usage: "password for authentication",
+	Name:   MongoDBPassword,
+	Usage:  "password for authentication",
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBAuthDatabase = &flag.StringFlag{
-	Name:  MongoDBAuthDatabase,
-	Usage: "database that holds the user's credentials",
+	Name:   MongoDBAuthDatabase,
+	Usage:  "database that holds the user's credentials",
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBAuthMechanism = &flag.StringFlag{
-	Name:  MongoDBAuthMechanism,
-	Usage: "authentication mechanism to use",
+	Name:   MongoDBAuthMechanism,
+	Usage:  "authentication mechanism to use",
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBAWSSessionToken = &flag.StringFlag{
-	Name:  MongoDBAWSSessionToken,
-	Usage: "session token to authenticate via AWS IAM",
+	Name:   MongoDBAWSSessionToken,
+	Usage:  "session token to authenticate via AWS IAM",
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBGSSAPIServiceName = &flag.StringFlag{
-	Name:  MongoDBGSSAPIServiceName,
-	Usage: "service name to use when authenticating using GSSAPI/Kerberos (default: mongodb)",
+	Name:   MongoDBGSSAPIServiceName,
+	Usage:  "service name to use when authenticating using GSSAPI/Kerberos (default: mongodb)",
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBGSSAPIHostName = &flag.StringFlag{
-	Name:  MongoDBGSSAPIHostName,
-	Usage: "hostname to use when authenticating using GSSAPI/Kerberos (default: <remote server's address>)",
+	Name:   MongoDBGSSAPIHostName,
+	Usage:  "hostname to use when authenticating using GSSAPI/Kerberos (default: <remote server's address>)",
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 var mongoDBDatabase = &flag.StringFlag{
-	Name:  MongoDBDatabase,
-	Usage: "database to use",
+	Name:     MongoDBDatabase,
+	Usage:    "database to use",
+	Required: true,
 }
 
 var mongoDBCollection = &flag.StringFlag{
-	Name:  MongoDBCollection,
-	Usage: "collection to use",
+	Name:     MongoDBCollection,
+	Usage:    "collection to use",
+	Required: true,
 }
 
 var mongoDBURI = &flag.StringFlag{
@@ -129,8 +148,9 @@ var mongoDBURI = &flag.StringFlag{
 }
 
 var mongoDBReadPreference = &flag.StringFlag{
-	Name:  MongoDBReadPreference,
-	Usage: `specify either a preference mode (e.g. 'nearest') or a preference json object (e.g. '{mode: "nearest", tagSets: [{a: "b"}],  maxStalenessSeconds: 123}')`,
+	Name:   MongoDBReadPreference,
+	Usage:  `specify either a preference mode (e.g. 'nearest') or a preference json object (e.g. '{mode: "nearest", tagSets: [{a: "b"}],  maxStalenessSeconds: 123}')`,
+	Hidden: !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 }
 
 func NewCommand() *cobra.Command {
@@ -150,11 +170,13 @@ func NewCommand() *cobra.Command {
 						mongoDBPassword,
 						mongoDBAuthDatabase,
 						mongoDBAuthMechanism,
-						mongoDBDatabase,
 					},
+					Hidden:   !feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
+					Required: true,
 				},
 			},
-			RequiredBrace: true,
+			Required:      true,
+			RequiredBrace: feature.IsFeatureEnabled(feature.CbmigrateMongoHostOptsConfig),
 			Type:          flag.RelationshipOR,
 		},
 		mongoDBSSLCAFile,
@@ -167,6 +189,7 @@ func NewCommand() *cobra.Command {
 		mongoDBGSSAPIServiceName,
 		mongoDBGSSAPIHostName,
 		mongoDBCollection,
+		mongoDBDatabase,
 		mongoDBReadPreference,
 	}
 	flags = append(flags, common.GetCBFlags()...)

@@ -8,7 +8,7 @@ import (
 type Name string
 
 const (
-	CbmigrateMongoHostOptsConfig Name = "CBMIGRATE_MONGO_HOST_OPTS_CONFIG"
+	CbmigrateMongoHostOptsConfig Name = "MONGO_HOST_OPTS_CONFIG"
 )
 
 var Features = map[Name]bool{
@@ -16,8 +16,8 @@ var Features = map[Name]bool{
 }
 
 func IsFeatureEnabled(feature Name) bool {
-	if value, _ := strconv.ParseBool(os.Getenv(string(CbmigrateMongoHostOptsConfig))); value {
+	if value, _ := strconv.ParseBool(os.Getenv("CBMIGRATE_" + string(feature))); value {
 		return true
 	}
-	return Features[CbmigrateMongoHostOptsConfig]
+	return Features[feature]
 }

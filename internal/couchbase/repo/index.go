@@ -2,7 +2,9 @@ package repo
 
 import (
 	"fmt"
-	"github.com/couchbaselabs/cbmigrate/internal/common"
+	"github.com/couchbaselabs/cbmigrate/internal/index"
+	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -77,40 +79,49 @@ func formatFieldReferenceWithAddtionalOptions(field string) string {
 }
 
 // ConvertMongoToCouchbase Convert MongoDB partial filter expression to Couchbase WHERE clause
-func ConvertMongoToCouchbase(expression map[string]interface{}, fieldPath common.IndexFieldPath) string {
-	exp := processExpression(expression, fieldPath)
+func ConvertMongoToCouchbase(expression map[string]interface{}, fieldPath index.IndexFieldPath) (string, error) {
+	exp, err := processExpression(expression, fieldPath)
+	if err != nil {
+		return "", err
+	}
 	if exp != "" {
 		exp = "WHERE " + exp
 	}
-	return exp
+	return exp, nil
 }
 
 // Recursively process the MongoDB expression
-func processExpression(expression map[string]interface{}, fieldPath common.IndexFieldPath) string {
+func processExpression(expression map[string]interface{}, fieldPath index.IndexFieldPath) (string, error) {
 	var conditions []string
 
 	for key, value := range expression {
 		switch key {
 		case "$and", "$or", "$not":
 			// Directly handle logical operators, translating them to N1QL syntax
-			logicalCondition := processLogicalOperator(key, value, fieldPath)
+			logicalCondition, err := processLogicalOperator(key, value, fieldPath)
+			if err != nil {
+				return "", err
+			}
 			if logicalCondition != "" {
 				conditions = append(conditions, logicalCondition)
 			}
 		default:
 			// Process comparison operators
-			fieldCondition := ProcessField(key, value, fieldPath)
+			fieldCondition, err := ProcessField(key, value, fieldPath)
+			if err != nil {
+				return "", err
+			}
 			if fieldCondition != "" {
 				conditions = append(conditions, fieldCondition)
 			}
 		}
 	}
 
-	return strings.Join(conditions, " AND ")
+	return strings.Join(conditions, " AND "), nil
 }
 
 // Handle logical operators by processing each contained expression
-func processLogicalOperator(operator string, value interface{}, fieldPath common.IndexFieldPath) string {
+func processLogicalOperator(operator string, value interface{}, fieldPath index.IndexFieldPath) (string, error) {
 	var conditions []string
 	var opSymbol string
 
@@ -126,24 +137,30 @@ func processLogicalOperator(operator string, value interface{}, fieldPath common
 	switch val := value.(type) {
 	case []interface{}:
 		for _, expr := range val {
-			condition := processExpression(expr.(map[string]interface{}), fieldPath)
+			condition, err := processExpression(expr.(map[string]interface{}), fieldPath)
+			if err != nil {
+				return "", err
+			}
 			if condition != "" {
 				conditions = append(conditions, condition)
 			}
 		}
-		return fmt.Sprintf("(%s)", strings.Join(conditions, fmt.Sprintf(" %s ", opSymbol)))
+		return fmt.Sprintf("(%s)", strings.Join(conditions, fmt.Sprintf(" %s ", opSymbol))), nil
 	case map[string]interface{}:
 		if operator == "$not" {
-			condition := processExpression(val, fieldPath)
-			return fmt.Sprintf("NOT (%s)", condition)
+			condition, err := processExpression(val, fieldPath)
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("NOT (%s)", condition), nil
 		}
 	}
 
-	return ""
+	return "", nil
 }
 
-// Process individual field conditions
-func ProcessField(field string, value interface{}, fieldPath common.IndexFieldPath) string {
+// ProcessField Process individual field conditions
+func ProcessField(field string, value interface{}, fieldPath index.IndexFieldPath) (string, error) {
 	field = fieldPath.Get(field)
 	switch v := value.(type) {
 	case map[string]interface{}:
@@ -151,17 +168,18 @@ func ProcessField(field string, value interface{}, fieldPath common.IndexFieldPa
 	default:
 		if strings.Index(field, "[]") > -1 {
 			conditionSuffix := fmt.Sprintf("%s %#v", "=", value)
-			arrFieldExpression := GenerateArrayFilterExpression(field)
-			return fmt.Sprintf(arrFieldExpression, conditionSuffix)
+			arrFieldExpression := GenerateArrayFilterExpression(field, false)
+			return fmt.Sprintf(arrFieldExpression, conditionSuffix), nil
 		}
 		// Handle direct equality as a special case
-		return fmt.Sprintf("%s = %#v", formatFieldReference(field), value)
+		return fmt.Sprintf("%s = %#v", formatFieldReference(field), value), nil
 	}
 }
 
 // Convert MongoDB comparison operators to their Couchbase equivalents
-func convertOperator(field string, operators map[string]interface{}) string {
+func convertOperator(field string, operators map[string]interface{}) (string, error) {
 	var conditions []string
+	isTypeOperand := false
 	for op, val := range operators {
 		couchbaseOp := ""
 		switch op {
@@ -180,46 +198,217 @@ func convertOperator(field string, operators map[string]interface{}) string {
 		case "$exists":
 			v, ok := val.(bool)
 			if ok && v {
-				couchbaseOp = "IS NOT NULL"
+				couchbaseOp = "IS NOT"
 			}
 			if ok && !v {
-				couchbaseOp = "IS NULL"
+				couchbaseOp = "IS"
 			}
+			val = "NULL"
+		case "$type":
+			couchbaseOp = "="
+			t, err := getCBType(val)
+			if err != nil {
+				return "", err
+			}
+			val = t
+			if strings.Index(t, ",") > -1 {
+				couchbaseOp = "IN"
+				val = "(" + t + ")"
+			}
+			isTypeOperand = true
+		default:
+			return "", fmt.Errorf("operand %s cannot be parsed to couchbase operand", op)
 		}
 		condition := ""
 		if strings.Index(field, "[]") > -1 {
 			conditionSuffix := fmt.Sprintf("%s %#v", couchbaseOp, val)
-			arrFieldExpression := GenerateArrayFilterExpression(field)
+			arrFieldExpression := GenerateArrayFilterExpression(field, isTypeOperand)
 			condition = fmt.Sprintf(arrFieldExpression, conditionSuffix)
+		} else {
+			if isTypeOperand {
+				field = "type(" + formatFieldReference(field) + ")"
+			}
+			condition = fmt.Sprintf("%s %s %#v", field, couchbaseOp, val)
 		}
-		condition = fmt.Sprintf("`%s` %s %#v", field, couchbaseOp, val)
 		conditions = append(conditions, condition)
 	}
-	return strings.Join(conditions, " AND ")
+	return strings.Join(conditions, " AND "), nil
 }
 
-func GenerateArrayFilterExpression(input string) string {
+func getCBType(val interface{}) (string, error) {
+	switch v := val.(type) {
+	case int32:
+		pv, ok := mongoCBPartialAlias[strconv.Itoa(int(v))]
+		if !ok {
+			return "", fmt.Errorf("type %d cannot be parsed to couchbase type", v)
+		}
+		return pv, nil
+	case string:
+		pv, ok := mongoCBPartialAlias[v]
+		if !ok {
+			return "", fmt.Errorf("type %s cannot be parsed to couchbase type", v)
+		}
+		return pv, nil
+	case []interface{}:
+		var types []string
+		for _, iv := range v {
+			pv, err := getCBType(iv)
+			if err != nil {
+				return "", err
+			}
+			types = append(types, pv)
+		}
+		return strings.Join(types, ","), nil
+	default:
+		return "", fmt.Errorf("invalid type %#v", reflect.TypeOf(val).String())
+	}
+	return "", nil
+}
+
+func GenerateArrayFilterExpression(input string, isTypeFilter bool) string {
 	parts := strings.Split(input, "[]")
 	for i := 0; i < len(parts); i++ {
 		parts[i] = strings.TrimPrefix(parts[i], ".")
 	}
-	return createArrayFilterExpression(parts, "", 0)
+	return createArrayFilterExpression(parts, "", 0, isTypeFilter)
 }
 
-func createArrayFilterExpression(parts []string, parent string, l int) string {
+func createArrayFilterExpression(parts []string, parent string, l int, isTypeFilter bool) string {
 	l++
 	if len(parts) == 1 {
 		if parts[0] == "" {
-			return fmt.Sprintf("%s %s", parent, "%s")
+			filter := parent
+			if isTypeFilter {
+				filter = "type(" + filter + ")"
+			}
+			return fmt.Sprintf("%s %s", filter, "%s")
 		}
-		return fmt.Sprintf("%s.%s %s", parent, formatFieldReferenceWithAddtionalOptions(parts[0]), "%s")
+		filter := formatFieldReference(parts[0])
+		if isTypeFilter {
+			filter = "type(" + filter + ")"
+		}
+		return fmt.Sprintf("%s.%s %s", parent, filter, "%s")
 	}
 	item := fmt.Sprintf("`l%dItem`", l)
 	items := formatFieldReference(parts[0])
 	if parent != "" {
 		items = parent + "." + items
 	}
-	inner := createArrayFilterExpression(parts[1:], item, l)
+	inner := createArrayFilterExpression(parts[1:], item, l, isTypeFilter)
 
 	return fmt.Sprintf("ANY %s IN %s SATISFIES (%s) END", item, items, inner)
+}
+
+var mongoCBPartialAlias = make(map[string]string)
+
+type mongoCBPartialAliasList struct {
+	mongoTypeNumber int
+	mongoTypeString string
+	couchbase       string
+}
+
+func init() {
+	var list []mongoCBPartialAliasList
+	list = append(
+		list,
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 1,
+			mongoTypeString: "double",
+			couchbase:       "number",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 16,
+			mongoTypeString: "int",
+			couchbase:       "number",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 18,
+			mongoTypeString: "long",
+			couchbase:       "number",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 19,
+			mongoTypeString: "decimal",
+			couchbase:       "number",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 2,
+			mongoTypeString: "string",
+			couchbase:       "string",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 3,
+			mongoTypeString: "object",
+			couchbase:       "object",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 4,
+			mongoTypeString: "array",
+			couchbase:       "array",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 5,
+			mongoTypeString: "binData",
+			couchbase:       "binary",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 6,
+			mongoTypeString: "undefined",
+			couchbase:       "null",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 7,
+			mongoTypeString: "objectId",
+			couchbase:       "string",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 8,
+			mongoTypeString: "bool",
+			couchbase:       "bool",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 9,
+			mongoTypeString: "date",
+			couchbase:       "string",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 10,
+			mongoTypeString: "null",
+			couchbase:       "null",
+		},
+		//mongoCBPartialAliasList{
+		//	mongoTypeNumber: 11,
+		//	mongoTypeString: "regex",
+		//	couchbase:       "string",
+		//},
+		//mongoCBPartialAliasList{
+		//	mongoTypeNumber: 12,
+		//	mongoTypeString: "dbPointer",
+		//	couchbase:       "string",
+		//},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 13,
+			mongoTypeString: "javascript",
+			couchbase:       "string",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 14,
+			mongoTypeString: "symbol",
+			couchbase:       "string",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 15,
+			mongoTypeString: "javascriptWithScope",
+			couchbase:       "string",
+		},
+		mongoCBPartialAliasList{
+			mongoTypeNumber: 17,
+			mongoTypeString: "timestamp",
+			couchbase:       "number",
+		},
+	)
+	for _, v := range list {
+		mongoCBPartialAlias[v.mongoTypeString] = v.couchbase
+		mongoCBPartialAlias[strconv.Itoa(v.mongoTypeNumber)] = v.couchbase
+	}
 }

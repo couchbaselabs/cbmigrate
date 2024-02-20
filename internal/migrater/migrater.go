@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/couchbaselabs/cbmigrate/internal/common"
+	"github.com/couchbaselabs/cbmigrate/internal/index"
 	"github.com/couchbaselabs/cbmigrate/internal/option"
 	"golang.org/x/sync/errgroup"
 )
@@ -14,7 +15,7 @@ type IMigrate interface {
 
 type Migrate struct {
 	Source      common.ISource
-	Analyzer    common.Analyzer
+	Analyzer    index.Analyzer
 	Destination common.IDestination
 }
 
@@ -32,27 +33,22 @@ func (m Migrate) Copy(opts *option.Options) error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	indexes, err := m.Source.GetIndexes(ctx)
+	if err != nil {
+		return err
+	}
 	m.Analyzer.Init(indexes)
 
-	var sChan = make(chan map[string]interface{}, 10000)
-	var dChan = make(chan map[string]interface{}, 10000)
+	var mChan = make(chan map[string]interface{}, 10000)
 	g := errgroup.Group{}
 	var sErr, dErr error
 	g.Go(func() error {
-		sErr = m.Source.StreamData(ctx, sChan)
-		close(sChan)
+		sErr = m.Source.StreamData(ctx, mChan)
+		close(mChan)
 		return nil
 	})
 	g.Go(func() error {
-		for data := range sChan {
+		for data := range mChan {
 			m.Analyzer.AnalyzeData(data)
-			dChan <- data
-		}
-		close(dChan)
-		return nil
-	})
-	g.Go(func() error {
-		for data := range dChan {
 			dErr = m.Destination.ProcessData(data)
 			if dErr != nil {
 				cancel()
@@ -78,7 +74,7 @@ func (m Migrate) Copy(opts *option.Options) error {
 	return err
 }
 
-func NewMigrator(source common.ISource, destination common.IDestination, analyzer common.Analyzer) IMigrate {
+func NewMigrator(source common.ISource, destination common.IDestination, analyzer index.Analyzer) IMigrate {
 	return Migrate{
 		Source:      source,
 		Destination: destination,

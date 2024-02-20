@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/couchbase/gocb/v2"
-	"github.com/couchbaselabs/cbmigrate/internal/common"
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
 	"github.com/couchbaselabs/cbmigrate/internal/db/couchbase"
+	Index "github.com/couchbaselabs/cbmigrate/internal/index"
 	"regexp"
 	"strings"
 	"time"
@@ -27,7 +27,7 @@ type IRepo interface {
 	CreateScope(name string) error
 	CreateCollection(scope, name string) error
 	UpsertData(scope, collection string, docs []gocb.BulkOp) error
-	CreateIndex(scope, collection string, index common.Index, fieldPath common.IndexFieldPath) error
+	CreateIndex(scope, collection string, index Index.Index, fieldPath Index.IndexFieldPath) error
 }
 
 type Repo struct {
@@ -72,7 +72,7 @@ func (r *Repo) UpsertData(scope, collection string, docs []gocb.BulkOp) error {
 	return col.Do(docs, nil)
 }
 
-func (r *Repo) CreateIndex(scope, collection string, index common.Index, fieldPath common.IndexFieldPath) error {
+func (r *Repo) CreateIndex(scope, collection string, index Index.Index, fieldPath Index.IndexFieldPath) error {
 
 	query, err := CreateIndexQuery(r.db.Bucket.Name(), scope, collection, index, fieldPath)
 	if err != nil {
@@ -85,8 +85,8 @@ func (r *Repo) CreateIndex(scope, collection string, index common.Index, fieldPa
 	return nil
 }
 
-func CreateIndexQuery(bucket, scope, collection string, index common.Index, fieldPath common.IndexFieldPath) (string, error) {
-	var arrFields []common.Key
+func CreateIndexQuery(bucket, scope, collection string, index Index.Index, fieldPath Index.IndexFieldPath) (string, error) {
+	var arrFields []Index.Key
 	isArrayFieldAtFistPos := false
 	for i, key := range index.Keys {
 		key.Field = fieldPath.Get(key.Field)
@@ -128,7 +128,10 @@ func CreateIndexQuery(bucket, scope, collection string, index common.Index, fiel
 	reg := regexp.MustCompile(`[^A-Za-z0-9#_]`)
 	// Replace characters that do not match the pattern with "_"
 	name := reg.ReplaceAllString(index.Name, "_")
-	partialFilter := ConvertMongoToCouchbase(index.PartialExpression, fieldPath)
+	partialFilter, err := ConvertMongoToCouchbase(index.PartialExpression, fieldPath)
+	if err != nil {
+		return "", err
+	}
 	query := fmt.Sprintf(
 		"create index `%s` on `%s`.`%s`.`%s` (%s) %s",
 		name, bucket, scope, collection, strings.Join(fields, ","), partialFilter)
@@ -151,7 +154,7 @@ func getLeadKeyAttr(order int, includeMissing bool) string {
 }
 
 // GroupAndCombine array fields are combined because only one array field can be indexed in a compound index
-func GroupAndCombine(keys []common.Key, includeMissing bool) (string, error) {
+func GroupAndCombine(keys []Index.Key, includeMissing bool) (string, error) {
 	// Assuming all keys have the same prefix for simplicity, as demonstrated in the combineStrings function
 	var prefix string
 	var combined []string

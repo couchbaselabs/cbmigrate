@@ -1,4 +1,4 @@
-package common
+package index
 
 type Index struct {
 	Name              string
@@ -11,13 +11,6 @@ type Index struct {
 type Key struct {
 	Field string
 	Order int
-}
-
-type Analyzer interface {
-	Init(indexes []Index)
-	AnalyzeData(data map[string]interface{})
-	GetIndexFieldPath() IndexFieldPath
-	//GetKeyPathWithArrayNotation(field string) string
 }
 
 // IndexFieldPath is used to have array representation for a particular path

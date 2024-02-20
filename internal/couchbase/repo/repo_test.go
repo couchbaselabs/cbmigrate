@@ -1,21 +1,20 @@
 package repo_test
 
 import (
-	"encoding/json"
 	"fmt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"strings"
 
-	"github.com/couchbaselabs/cbmigrate/internal/common"
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase/repo"
+	index2 "github.com/couchbaselabs/cbmigrate/internal/index"
 )
 
 var _ = Describe("couchbase repo", func() {
 	Describe("test group and combine", func() {
 		Context("success", func() {
 			It("output data should match with the test data with sparse false", func() {
-				keys := []common.Key{
+				keys := []index2.Key{
 					{Field: "k2[].n1k1[].n2k1.n3k1", Order: 1},
 					{Field: "k2[].n1k1[].n2k1.n3k2.n4k1", Order: -1},
 					{Field: "k2[].n1k1[].n2k2", Order: 1},
@@ -25,7 +24,7 @@ var _ = Describe("couchbase repo", func() {
 				Expect(output).To(Equal("k2[].n1k1[].n2k1.n3k1 ASC INCLUDE MISSING,.n2k1.n3k2.n4k1 DESC,.n2k2 ASC"))
 			})
 			It("output data should match with the test data with sparse true", func() {
-				keys := []common.Key{
+				keys := []index2.Key{
 					{Field: "k2[].n1k1[].n2k1.n3k1", Order: 1},
 					{Field: "k2[].n1k1[].n2k1.n3k2.n4k1", Order: -1},
 					{Field: "k2[].n1k1[].n2k2", Order: 1},
@@ -35,7 +34,7 @@ var _ = Describe("couchbase repo", func() {
 				Expect(output).To(Equal("k2[].n1k1[].n2k1.n3k1 ASC,.n2k1.n3k2.n4k1 DESC,.n2k2 ASC"))
 			})
 			It("output data should match with the test data with array in n3", func() {
-				keys := []common.Key{
+				keys := []index2.Key{
 					{Field: "k2[].n1k1[].n2k1.n3k1[].n4k1", Order: 1},
 					{Field: "k2[].n1k1[].n2k1.n3k1[].n4k2.n5k1", Order: -1},
 					{Field: "k2[].n1k1[].n2k1.n3k1[].n4k2", Order: 1},
@@ -47,7 +46,7 @@ var _ = Describe("couchbase repo", func() {
 		})
 		Context("failure", func() {
 			It("should return error on multiple array reference", func() {
-				keys := []common.Key{
+				keys := []index2.Key{
 					{Field: "k2[].n1k1[].n2k1.n3k1", Order: 1},
 					{Field: "k2[].n1k1[].n2k1.n3k2.n4k1", Order: -1},
 					{Field: "k2[].n1k1[].n2k2[]", Order: 1},
@@ -77,12 +76,13 @@ var _ = Describe("couchbase repo", func() {
 	Describe("generate partial filter expression", func() {
 		Context("success", func() {
 			It("output data should match with the test data", func() {
-				fieldPath := common.IndexFieldPath{}
+				fieldPath := index2.IndexFieldPath{}
 				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
 				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
 				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
 				output := "ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k1`.`n3k1` = 1) END) END"
-				fieldExpression := repo.ProcessField("k2.n1k1.n2k1.n3k1", 1, fieldPath)
+				fieldExpression, err := repo.ProcessField("k2.n1k1.n2k1.n3k1", 1, fieldPath)
+				Expect(err).To(BeNil())
 				Expect(fieldExpression).To(Equal(output))
 			})
 		})
@@ -90,23 +90,54 @@ var _ = Describe("couchbase repo", func() {
 	Describe("generate partial filter expression", func() {
 		Context("success", func() {
 			It("output data should match with the test data", func() {
-				pfStr := `{"k1.n1k1":1, "$and":[{"k5":1},{"$or": [{"k2.n1k1.n2k1.n3k1": 5}, {"k2.n1k1.n2k2": 10}]}]}`
-				partialFilter := map[string]interface{}{}
-
-				err := json.Unmarshal([]byte(pfStr), &partialFilter)
-				if err != nil {
-					fmt.Println(err)
+				partialFilter := map[string]interface{}{
+					"k1.n1k1": 1,
+					"$and": []interface{}{
+						map[string]interface{}{
+							"k5": 1,
+						},
+						map[string]interface{}{
+							"$or": []interface{}{
+								map[string]interface{}{
+									"k2.n1k1.n2k1.n3k1": int64(5),
+								},
+								map[string]interface{}{
+									"k2.n1k1.n2k2": float64(10),
+								},
+							},
+						},
+					},
 				}
-				fieldPath := common.IndexFieldPath{}
+				fieldPath := index2.IndexFieldPath{}
 				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
 				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
 				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
 
 				output := "WHERE `k1`.`n1k1` = 1 AND (`k5` = 1 AND (ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k1`.`n3k1` = 5) END) END OR ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k2` = 10) END) END))"
-				result := repo.ConvertMongoToCouchbase(partialFilter, fieldPath)
-				fmt.Println("\n" + result)
-				fmt.Println("\n" + output)
+				result, err := repo.ConvertMongoToCouchbase(partialFilter, fieldPath)
+				Expect(err).To(BeNil())
+				//fmt.Println("\n" + result)
+				//fmt.Println("\n" + output)
 
+				Expect(result).To(Equal(output))
+			})
+			It("generate partial filter expression with type", func() {
+				partialFilter := map[string]interface{}{
+					"a": map[string]interface{}{
+						"$type": int32(1),
+					},
+					"b": map[string]interface{}{
+						"$type": "string",
+					},
+				}
+				fieldPath := index2.IndexFieldPath{}
+				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
+				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
+				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
+
+				output := "WHERE type(`a`) = \"number\" AND type(`b`) = \"string\""
+				result, err := repo.ConvertMongoToCouchbase(partialFilter, fieldPath)
+				Expect(err).To(BeNil())
 				Expect(result).To(Equal(output))
 			})
 			//It("output data should match with the test data", func() {
@@ -124,9 +155,9 @@ var _ = Describe("couchbase repo", func() {
 		collection := "collection1"
 		Context("success", func() {
 			It("output data should match with the test data", func() {
-				index := common.Index{
+				index := index2.Index{
 					Name: "test",
-					Keys: []common.Key{
+					Keys: []index2.Key{
 						{Field: "k1.n1k1", Order: 1},
 						{Field: "k2.n1k1.n2k1.n3k1", Order: 1},
 						{Field: "k3", Order: 1},
@@ -136,7 +167,7 @@ var _ = Describe("couchbase repo", func() {
 					},
 					Sparse: false,
 				}
-				fieldPath := common.IndexFieldPath{}
+				fieldPath := index2.IndexFieldPath{}
 				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
 				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
 				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
@@ -149,22 +180,43 @@ var _ = Describe("couchbase repo", func() {
 				}
 
 				Output := fmt.Sprintf(
-					"create index %s on `%s`.`%s`.`%s` (%s) ",
+					"create index `%s` on `%s`.`%s`.`%s` (%s) ",
 					index.Name, bucket, scope, collection, strings.Join(fields, ","))
 				query, err := repo.CreateIndexQuery(bucket, scope, collection, index, fieldPath)
 				Expect(err).To(BeNil())
 				Expect(query).To(Equal(Output))
+
 			})
 			It("output data should match with the test data with partial filter", func() {
-				pfStr := `{"k1.n1k1":1, "$and":[{"k5":1},{"$or": [{"k2.n1k1.n2k1.n3k1": 5}, {"k2.n1k1.n2k2": 10}]}]}`
-				partialFilter := map[string]interface{}{}
+				//pfStr := `{"k1.n1k1":1, "$and":[{"k5":1},{"$or": [{"k2.n1k1.n2k1.n3k1": 5}, {"k2.n1k1.n2k2": 10}, {"k2.n1k1.n2k1.n3k2.n4k1" : {"$gte": 100}}]}]}`
+				partialFilter := map[string]interface{}{
+					"k1.n1k1": 1,
+					"$and": []interface{}{
+						map[string]interface{}{
+							"k5": 1,
+						},
+						map[string]interface{}{
+							"$or": []interface{}{
+								map[string]interface{}{
+									"k2.n1k1.n2k1.n3k1": int64(5),
+								},
+								map[string]interface{}{
+									"k2.n1k1.n2k2": float64(10),
+								},
+								map[string]interface{}{
+									"k2.n1k1.n2k1.n3k2.n4k1": map[string]interface{}{
+										"$gte": 100,
+									},
+								},
+							},
+						},
+					},
+				}
 
-				_ = json.Unmarshal([]byte(pfStr), &partialFilter)
-
-				index := common.Index{
+				index := index2.Index{
 					Name:              "test",
 					PartialExpression: partialFilter,
-					Keys: []common.Key{
+					Keys: []index2.Key{
 						{Field: "k1.n1k1", Order: 1},
 						{Field: "k2.n1k1.n2k1.n3k1", Order: 1},
 						{Field: "k3", Order: 1},
@@ -174,7 +226,7 @@ var _ = Describe("couchbase repo", func() {
 					},
 					Sparse: false,
 				}
-				fieldPath := common.IndexFieldPath{}
+				fieldPath := index2.IndexFieldPath{}
 				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
 				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
 				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
@@ -186,22 +238,22 @@ var _ = Describe("couchbase repo", func() {
 					"`k4`.`n1k2`.`n2k1` ASC",
 				}
 
-				partialExpression := "WHERE `k1`.`n1k1` = 1 AND (`k5` = 1 AND (ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k1`.`n3k1` = 5) END) END OR ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k2` = 10) END) END))"
+				partialExpression := "WHERE `k1`.`n1k1` = 1 AND (`k5` = 1 AND (ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k1`.`n3k1` = 5) END) END OR ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k2` = 10) END) END OR ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k1`.`n3k2`.`n4k1` >= 100) END) END))"
 				Output := fmt.Sprintf(
-					"create index %s on `%s`.`%s`.`%s` (%s) %s",
+					"create index `%s` on `%s`.`%s`.`%s` (%s) %s",
 					index.Name, bucket, scope, collection, strings.Join(fields, ","), partialExpression)
 				query, err := repo.CreateIndexQuery(bucket, scope, collection, index, fieldPath)
 				Expect(err).To(BeNil())
-				fmt.Println("\n" + query)
-				fmt.Println(Output)
+				//fmt.Println("\n" + query)
+				//fmt.Println(Output)
 				Expect(query).To(Equal(Output))
 			})
 		})
 		Context("failure", func() {
 			It("output data should match with the test data", func() {
-				index := common.Index{
+				index := index2.Index{
 					Name: "test",
-					Keys: []common.Key{
+					Keys: []index2.Key{
 						{Field: "k1.n1k1", Order: 1},
 						{Field: "k2.n1k1.n2k1.n3k1", Order: 1},
 						{Field: "k3", Order: 1},
@@ -212,7 +264,7 @@ var _ = Describe("couchbase repo", func() {
 					Sparse: false,
 				}
 
-				fieldPath := common.IndexFieldPath{}
+				fieldPath := index2.IndexFieldPath{}
 				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
 				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
 				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"

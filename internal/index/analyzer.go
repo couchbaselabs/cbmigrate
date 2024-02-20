@@ -1,12 +1,17 @@
 package index
 
+//go:generate mockgen -source=analyzer.go -destination=../../testhelper/mock/index.go -package=mock_test Analyzer
+
 import (
 	"reflect"
 	"strings"
 )
 
 type Analyzer interface {
-	Analyze(data map[string]interface{})
+	Init(indexes []Index)
+	AnalyzeData(data map[string]interface{})
+	GetIndexFieldPath() IndexFieldPath
+	//GetKeyPathWithArrayNotation(field string) string
 }
 
 // isArray checks if the provided value is an array or a slice.
@@ -70,4 +75,43 @@ func NavigatePath(path string, data map[string]interface{}) (string, bool) {
 		return result.String(), true
 	}
 	return "", false
+}
+
+// ExtractKeys traverses a MongoDB filter expression and collects unique field names.
+func ExtractKeys(expression map[string]interface{}) []string {
+	keysMap := make(map[string]bool)
+	collectKeys(expression, keysMap)
+
+	// Convert the map to a slice for the output
+	var keys []string
+	for key := range keysMap {
+		keys = append(keys, key)
+	}
+
+	return keys
+}
+
+// collectKeys is a recursive helper function to traverse the expression.
+func collectKeys(expression map[string]interface{}, keysMap map[string]bool) {
+	for key, value := range expression {
+		if key == "$and" || key == "$or" {
+			switch exprs := value.(type) {
+			case []interface{}:
+				for _, expr := range exprs {
+					collectKeys(expr.(map[string]interface{}), keysMap)
+				}
+			case map[string]interface{}:
+				collectKeys(exprs, keysMap)
+			}
+		} else {
+			// Directly add the key as a field name
+			keysMap[key] = true
+
+			// Check if the value is a map indicating a comparison operation
+			if _, ok := value.(map[string]interface{}); ok {
+				// Previously, we had a variable here that was unused.
+				// Since we only want to confirm the type, no further action is needed here.
+			}
+		}
+	}
 }

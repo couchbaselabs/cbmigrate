@@ -1,6 +1,9 @@
 package common
 
-import "reflect"
+import (
+	"reflect"
+	"sort"
+)
 
 // IsNilOrZero checks if the provided interface{} value is nil,
 // a nil pointer, a nil interface, or a zero value of any type.
@@ -27,4 +30,13 @@ func IsNilOrZero(i interface{}) bool {
 		// For all other types, use IsZero to determine if it's the zero value for its type.
 		return v.IsZero()
 	}
+}
+
+func GetMapKeys(val map[string]interface{}) []string {
+	var keys = make([]string, 0, len(val))
+	for k, _ := range val {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }

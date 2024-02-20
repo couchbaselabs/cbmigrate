@@ -14,7 +14,7 @@ test:
 fmt:
 	 go fmt ./...
 
-go_generate:
+gog:
 	go generate ./...
 
 lint:
