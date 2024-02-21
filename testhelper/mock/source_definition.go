@@ -13,51 +13,49 @@ import (
 	context "context"
 	reflect "reflect"
 
-	index "github.com/couchbaselabs/cbmigrate/internal/index"
-	option "github.com/couchbaselabs/cbmigrate/internal/option"
 	gomock "go.uber.org/mock/gomock"
 )
 
 // MockISource is a mock of ISource interface.
-type MockISource struct {
+type MockISource[Index any, Options any] struct {
 	ctrl     *gomock.Controller
-	recorder *MockISourceMockRecorder
+	recorder *MockISourceMockRecorder[Index, Options]
 }
 
 // MockISourceMockRecorder is the mock recorder for MockISource.
-type MockISourceMockRecorder struct {
-	mock *MockISource
+type MockISourceMockRecorder[Index any, Options any] struct {
+	mock *MockISource[Index, Options]
 }
 
 // NewMockISource creates a new mock instance.
-func NewMockISource(ctrl *gomock.Controller) *MockISource {
-	mock := &MockISource{ctrl: ctrl}
-	mock.recorder = &MockISourceMockRecorder{mock}
+func NewMockISource[Index any, Options any](ctrl *gomock.Controller) *MockISource[Index, Options] {
+	mock := &MockISource[Index, Options]{ctrl: ctrl}
+	mock.recorder = &MockISourceMockRecorder[Index, Options]{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockISource) EXPECT() *MockISourceMockRecorder {
+func (m *MockISource[Index, Options]) EXPECT() *MockISourceMockRecorder[Index, Options] {
 	return m.recorder
 }
 
 // GetIndexes mocks base method.
-func (m *MockISource) GetIndexes(ctx context.Context) ([]index.Index, error) {
+func (m *MockISource[Index, Options]) GetIndexes(ctx context.Context) ([]Index, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetIndexes", ctx)
-	ret0, _ := ret[0].([]index.Index)
+	ret0, _ := ret[0].([]Index)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetIndexes indicates an expected call of GetIndexes.
-func (mr *MockISourceMockRecorder) GetIndexes(ctx any) *gomock.Call {
+func (mr *MockISourceMockRecorder[Index, Options]) GetIndexes(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIndexes", reflect.TypeOf((*MockISource)(nil).GetIndexes), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIndexes", reflect.TypeOf((*MockISource[Index, Options])(nil).GetIndexes), ctx)
 }
 
 // Init mocks base method.
-func (m *MockISource) Init(opts *option.Options) error {
+func (m *MockISource[Index, Options]) Init(opts *Options) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Init", opts)
 	ret0, _ := ret[0].(error)
@@ -65,13 +63,13 @@ func (m *MockISource) Init(opts *option.Options) error {
 }
 
 // Init indicates an expected call of Init.
-func (mr *MockISourceMockRecorder) Init(opts any) *gomock.Call {
+func (mr *MockISourceMockRecorder[Index, Options]) Init(opts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockISource)(nil).Init), opts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockISource[Index, Options])(nil).Init), opts)
 }
 
 // StreamData mocks base method.
-func (m *MockISource) StreamData(arg0 context.Context, arg1 chan map[string]any) error {
+func (m *MockISource[Index, Options]) StreamData(arg0 context.Context, arg1 chan map[string]any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StreamData", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -79,7 +77,7 @@ func (m *MockISource) StreamData(arg0 context.Context, arg1 chan map[string]any)
 }
 
 // StreamData indicates an expected call of StreamData.
-func (mr *MockISourceMockRecorder) StreamData(arg0, arg1 any) *gomock.Call {
+func (mr *MockISourceMockRecorder[Index, Options]) StreamData(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StreamData", reflect.TypeOf((*MockISource)(nil).StreamData), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StreamData", reflect.TypeOf((*MockISource[Index, Options])(nil).StreamData), arg0, arg1)
 }

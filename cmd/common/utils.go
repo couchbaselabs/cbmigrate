@@ -107,7 +107,7 @@ func BuildURI(host, port string) string {
 	return fmt.Sprintf("mongodb://%s/", hostpairs)
 }
 
-func ParesCouchbaseOptions(cmd *cobra.Command) (*option.Options, error) {
+func ParesCouchbaseOptions(cmd *cobra.Command, collection string) (*option.Options, error) {
 	var err error
 	cbopts := &option.Options{
 		Auth:      &option.Auth{},
@@ -146,7 +146,11 @@ func ParesCouchbaseOptions(cmd *cobra.Command) (*option.Options, error) {
 
 	cbopts.NameSpace.Bucket, _ = cmd.Flags().GetString(CBBucket)
 	cbopts.NameSpace.Scope, _ = cmd.Flags().GetString(CBScope)
-	cbopts.NameSpace.Collection, _ = cmd.Flags().GetString(CBCollection)
+	if cmd.Flags().Changed(CBCollection) {
+		cbopts.NameSpace.Collection, _ = cmd.Flags().GetString(CBCollection)
+	} else {
+		cbopts.NameSpace.Collection = collection
+	}
 
 	cbopts.GeneratedKey, _ = cmd.Flags().GetString(CBGenerateKey)
 
@@ -162,9 +166,6 @@ func CouchBaseMissingRequiredOptions(cmd *cobra.Command) []string {
 		fallthrough
 	case !cmd.Flags().Changed(CBScope):
 		missingRequiredOptions = append(missingRequiredOptions, CBScope)
-		fallthrough
-	case !cmd.Flags().Changed(CBCollection):
-		missingRequiredOptions = append(missingRequiredOptions, CBCollection)
 	}
 	return missingRequiredOptions
 }

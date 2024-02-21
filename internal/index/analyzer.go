@@ -7,10 +7,10 @@ import (
 	"strings"
 )
 
-type Analyzer interface {
-	Init(indexes []Index)
+type Analyzer[T any] interface {
+	Init(index []T)
 	AnalyzeData(data map[string]interface{})
-	GetIndexFieldPath() IndexFieldPath
+	GetCouchbaseQuery(bucket, scope, collection string) []Index
 	//GetKeyPathWithArrayNotation(field string) string
 }
 

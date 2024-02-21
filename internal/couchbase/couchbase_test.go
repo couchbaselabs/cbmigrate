@@ -5,7 +5,6 @@ import (
 	"github.com/couchbaselabs/cbmigrate/internal/common"
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase"
 	cOpts "github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
-	"github.com/couchbaselabs/cbmigrate/internal/option"
 	mock_test "github.com/couchbaselabs/cbmigrate/testhelper/mock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -59,14 +58,12 @@ var _ = Describe("couchbase service", func() {
 		})
 		Context("init connection success", func() {
 			It("scope and collection exists", func() {
-				opts := &option.Options{
-					CBOpts: &cOpts.Options{
-						Cluster:   "cluster-url",
-						NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col"},
-						BatchSize: 100,
-					},
+				opts := &cOpts.Options{
+					Cluster:   "cluster-url",
+					NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col"},
+					BatchSize: 100,
 				}
-				db.EXPECT().Init(opts.CBOpts.Cluster, opts.CBOpts).Return(nil)
+				db.EXPECT().Init(opts.Cluster, opts).Return(nil)
 				db.EXPECT().GetAllScopes().DoAndReturn(func() ([]gocb.ScopeSpec, error) {
 					return []gocb.ScopeSpec{
 						scopeSpec1,
@@ -79,35 +76,32 @@ var _ = Describe("couchbase service", func() {
 				Expect(err).To(BeNil())
 			})
 			It("create scope and collection", func() {
-				opts := &option.Options{
-					CBOpts: &cOpts.Options{
-						Cluster:   "cluster-url",
-						NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col"},
-						BatchSize: 100,
-					},
+				opts := &cOpts.Options{
+					Cluster:   "cluster-url",
+					NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col"},
+					BatchSize: 100,
 				}
-				db.EXPECT().Init(opts.CBOpts.Cluster, opts.CBOpts).Return(nil)
+				db.EXPECT().Init(opts.Cluster, opts).Return(nil)
 				db.EXPECT().GetAllScopes().DoAndReturn(func() ([]gocb.ScopeSpec, error) {
 					return []gocb.ScopeSpec{
 						scopeSpec2,
 						scopeSpec3,
 					}, nil
 				})
-				db.EXPECT().CreateScope(opts.CBOpts.Scope).Return(nil)
-				db.EXPECT().CreateCollection(opts.CBOpts.Scope, opts.CBOpts.Collection).Return(nil)
+				db.EXPECT().CreateScope(opts.Scope).Return(nil)
+				db.EXPECT().CreateCollection(opts.Scope, opts.Collection).Return(nil)
 				err := couchbaseService.Init(opts)
 				Expect(err).To(BeNil())
 
 			})
 			It("create collection", func() {
-				opts := &option.Options{
-					CBOpts: &cOpts.Options{
-						Cluster:   "cluster-url",
-						NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col2"},
-						BatchSize: 100,
-					},
+				opts := &cOpts.Options{
+					Cluster:   "cluster-url",
+					NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col2"},
+					BatchSize: 100,
 				}
-				db.EXPECT().Init(opts.CBOpts.Cluster, opts.CBOpts).Return(nil)
+
+				db.EXPECT().Init(opts.Cluster, opts).Return(nil)
 				db.EXPECT().GetAllScopes().DoAndReturn(func() ([]gocb.ScopeSpec, error) {
 					return []gocb.ScopeSpec{
 						scopeSpec1,
@@ -115,58 +109,52 @@ var _ = Describe("couchbase service", func() {
 						scopeSpec3,
 					}, nil
 				})
-				db.EXPECT().CreateCollection(opts.CBOpts.Scope, opts.CBOpts.Collection).Return(nil)
+				db.EXPECT().CreateCollection(opts.Scope, opts.Collection).Return(nil)
 				err := couchbaseService.Init(opts)
 				Expect(err).To(BeNil())
 			})
 		})
 		Context("init connection failure", func() {
 			It("get all scopes", func() {
-				opts := &option.Options{
-					CBOpts: &cOpts.Options{
-						Cluster:   "cluster-url",
-						NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col"},
-						BatchSize: 100,
-					},
+				opts := &cOpts.Options{
+					Cluster:   "cluster-url",
+					NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col"},
+					BatchSize: 100,
 				}
 				getAllScopeError := errors.New("error in getting all scopes")
-				db.EXPECT().Init(opts.CBOpts.Cluster, opts.CBOpts).Return(nil)
+				db.EXPECT().Init(opts.Cluster, opts).Return(nil)
 				db.EXPECT().GetAllScopes().Return(nil, getAllScopeError)
 				err := couchbaseService.Init(opts)
 				Expect(err).NotTo(BeNil())
 				Expect(err).To(Equal(getAllScopeError))
 			})
 			It("create scopes", func() {
-				opts := &option.Options{
-					CBOpts: &cOpts.Options{
-						Cluster:   "cluster-url",
-						NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col"},
-						BatchSize: 100,
-					},
+				opts := &cOpts.Options{
+					Cluster:   "cluster-url",
+					NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col"},
+					BatchSize: 100,
 				}
 				createScopeError := errors.New("error in creating scope")
-				db.EXPECT().Init(opts.CBOpts.Cluster, opts.CBOpts).Return(nil)
+				db.EXPECT().Init(opts.Cluster, opts).Return(nil)
 				db.EXPECT().GetAllScopes().DoAndReturn(func() ([]gocb.ScopeSpec, error) {
 					return []gocb.ScopeSpec{
 						scopeSpec2,
 						scopeSpec3,
 					}, nil
 				})
-				db.EXPECT().CreateScope(opts.CBOpts.Scope).Return(createScopeError)
+				db.EXPECT().CreateScope(opts.Scope).Return(createScopeError)
 				err := couchbaseService.Init(opts)
 				Expect(err).NotTo(BeNil())
 				Expect(err).To(Equal(createScopeError))
 			})
 			It("create collection with existing scope", func() {
-				opts := &option.Options{
-					CBOpts: &cOpts.Options{
-						Cluster:   "cluster-url",
-						NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col1"},
-						BatchSize: 100,
-					},
+				opts := &cOpts.Options{
+					Cluster:   "cluster-url",
+					NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col1"},
+					BatchSize: 100,
 				}
 				createCollectionError := errors.New("error in creating collection")
-				db.EXPECT().Init(opts.CBOpts.Cluster, opts.CBOpts).Return(nil)
+				db.EXPECT().Init(opts.Cluster, opts).Return(nil)
 				db.EXPECT().GetAllScopes().DoAndReturn(func() ([]gocb.ScopeSpec, error) {
 					return []gocb.ScopeSpec{
 						scopeSpec1,
@@ -174,21 +162,19 @@ var _ = Describe("couchbase service", func() {
 						scopeSpec3,
 					}, nil
 				})
-				db.EXPECT().CreateCollection(opts.CBOpts.Scope, opts.CBOpts.Collection).Return(createCollectionError)
+				db.EXPECT().CreateCollection(opts.Scope, opts.Collection).Return(createCollectionError)
 				err := couchbaseService.Init(opts)
 				Expect(err).NotTo(BeNil())
 				Expect(err).To(Equal(createCollectionError))
 			})
 			It("create collection with non existing scope", func() {
-				opts := &option.Options{
-					CBOpts: &cOpts.Options{
-						Cluster:   "cluster-url",
-						NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope1", Collection: "test_col1"},
-						BatchSize: 100,
-					},
+				opts := &cOpts.Options{
+					Cluster:   "cluster-url",
+					NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope1", Collection: "test_col1"},
+					BatchSize: 100,
 				}
 				createCollectionError := errors.New("error in creating collection")
-				db.EXPECT().Init(opts.CBOpts.Cluster, opts.CBOpts).Return(nil)
+				db.EXPECT().Init(opts.Cluster, opts).Return(nil)
 				db.EXPECT().GetAllScopes().DoAndReturn(func() ([]gocb.ScopeSpec, error) {
 					return []gocb.ScopeSpec{
 						scopeSpec1,
@@ -196,22 +182,20 @@ var _ = Describe("couchbase service", func() {
 						scopeSpec3,
 					}, nil
 				})
-				db.EXPECT().CreateScope(opts.CBOpts.Scope).Return(nil)
-				db.EXPECT().CreateCollection(opts.CBOpts.Scope, opts.CBOpts.Collection).Return(createCollectionError)
+				db.EXPECT().CreateScope(opts.Scope).Return(nil)
+				db.EXPECT().CreateCollection(opts.Scope, opts.Collection).Return(createCollectionError)
 				err := couchbaseService.Init(opts)
 				Expect(err).NotTo(BeNil())
 				Expect(err).To(Equal(createCollectionError))
 			})
 			It("Error in initializing db connection", func() {
-				opts := &option.Options{
-					CBOpts: &cOpts.Options{
-						Cluster:   "cluster-url",
-						NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col1"},
-						BatchSize: 100,
-					},
+				opts := &cOpts.Options{
+					Cluster:   "cluster-url",
+					NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col1"},
+					BatchSize: 100,
 				}
 				dbConInitError := errors.New("error in initializing db connection")
-				db.EXPECT().Init(opts.CBOpts.Cluster, opts.CBOpts).Return(dbConInitError)
+				db.EXPECT().Init(opts.Cluster, opts).Return(dbConInitError)
 				err := couchbaseService.Init(opts)
 				Expect(err).NotTo(BeNil())
 				Expect(err).To(Equal(dbConInitError))
@@ -226,18 +210,16 @@ var _ = Describe("couchbase service", func() {
 			couchbaseService common.IDestination
 			docs             []map[string]interface{}
 		)
-		opts := &option.Options{
-			CBOpts: &cOpts.Options{
-				Cluster:   "cluster-url",
-				NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col"},
-				BatchSize: 100,
-			},
+		opts := &cOpts.Options{
+			Cluster:   "cluster-url",
+			NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col"},
+			BatchSize: 100,
 		}
 		BeforeEach(func() {
 			ctrl = gomock.NewController(GinkgoT())
 			db = mock_test.NewMockCouchbaseIRepo(ctrl)
 			couchbaseService = couchbase.NewCouchbase(db)
-			db.EXPECT().Init(opts.CBOpts.Cluster, opts.CBOpts).Return(nil)
+			db.EXPECT().Init(opts.Cluster, opts).Return(nil)
 			db.EXPECT().GetAllScopes().DoAndReturn(func() ([]gocb.ScopeSpec, error) {
 				return []gocb.ScopeSpec{
 					scopeSpec1,
@@ -266,7 +248,7 @@ var _ = Describe("couchbase service", func() {
 				err := couchbaseService.Init(opts)
 				Expect(err).To(BeNil())
 				i := 0
-				db.EXPECT().UpsertData(opts.CBOpts.Scope, opts.CBOpts.Collection, gomock.Any()).Times(5).DoAndReturn(func(scope, collection string, uDocs []gocb.BulkOp) error {
+				db.EXPECT().UpsertData(opts.Scope, opts.Collection, gomock.Any()).Times(5).DoAndReturn(func(scope, collection string, uDocs []gocb.BulkOp) error {
 					for _, d := range uDocs {
 						if !reflect.DeepEqual(d.(*gocb.UpsertOp).Value, docs[i]) {
 							return errors.New("doc not equal")
@@ -297,7 +279,7 @@ var _ = Describe("couchbase service", func() {
 				err := couchbaseService.Init(opts)
 				Expect(err).To(BeNil())
 				i := 0
-				db.EXPECT().UpsertData(opts.CBOpts.Scope, opts.CBOpts.Collection, gomock.Any()).Times(6).DoAndReturn(func(scope, collection string, uDocs []gocb.BulkOp) error {
+				db.EXPECT().UpsertData(opts.Scope, opts.Collection, gomock.Any()).Times(6).DoAndReturn(func(scope, collection string, uDocs []gocb.BulkOp) error {
 					for _, d := range uDocs {
 						if !reflect.DeepEqual(d.(*gocb.UpsertOp).Value, docs[i]) {
 							return errors.New("doc not equal")
@@ -330,11 +312,11 @@ var _ = Describe("couchbase service", func() {
 				err := couchbaseService.Init(opts)
 				Expect(err).To(BeNil())
 				processDataError := errors.New("error in processing the data")
-				db.EXPECT().UpsertData(opts.CBOpts.Scope, opts.CBOpts.Collection, gomock.Any()).Times(6).Return(processDataError)
+				db.EXPECT().UpsertData(opts.Scope, opts.Collection, gomock.Any()).Times(6).Return(processDataError)
 				err = couchbaseService.ProcessData(docs[0])
 				for i, doc := range docs {
 					err = couchbaseService.ProcessData(doc)
-					if i+1%opts.CBOpts.BatchSize == 0 {
+					if i+1%opts.BatchSize == 0 {
 						Expect(err).NotTo(BeNil())
 						Expect(err).To(Equal(processDataError))
 					}

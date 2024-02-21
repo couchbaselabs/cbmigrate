@@ -11,11 +11,10 @@ import (
 	"github.com/couchbaselabs/cbmigrate/internal/mongo"
 	mOpts "github.com/couchbaselabs/cbmigrate/internal/mongo/option"
 	mRepo "github.com/couchbaselabs/cbmigrate/internal/mongo/repo"
-	"github.com/couchbaselabs/cbmigrate/internal/option"
 )
 
 type Action struct {
-	migrate migrater.IMigrate
+	migrate migrater.IMigrate[mOpts.Options]
 }
 
 func NewAction() *Action {
@@ -76,7 +75,7 @@ func (a *Action) RunE(cmd *cobra.Command, args []string) error {
 	mopts.Namespace.DB, _ = cmd.Flags().GetString(command.MongoDBDatabase)
 	mopts.Namespace.Collection, _ = cmd.Flags().GetString(command.MongoDBCollection)
 
-	cbopts, err := common.ParesCouchbaseOptions(cmd)
+	cbopts, err := common.ParesCouchbaseOptions(cmd, mopts.Namespace.Collection)
 	if err != nil {
 		return err
 	}
@@ -84,12 +83,7 @@ func (a *Action) RunE(cmd *cobra.Command, args []string) error {
 		cbopts.GeneratedKey = " %_id%"
 	}
 
-	opts := &option.Options{
-		MOpts:  mopts,
-		CBOpts: cbopts,
-	}
-
-	err = a.migrate.Copy(opts)
+	err = a.migrate.Copy(mopts, cbopts)
 	if err != nil {
 		return err
 	}

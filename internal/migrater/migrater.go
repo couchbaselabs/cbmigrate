@@ -4,28 +4,28 @@ import (
 	"context"
 	"errors"
 	"github.com/couchbaselabs/cbmigrate/internal/common"
+	"github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
 	"github.com/couchbaselabs/cbmigrate/internal/index"
-	"github.com/couchbaselabs/cbmigrate/internal/option"
 	"golang.org/x/sync/errgroup"
 )
 
-type IMigrate interface {
-	Copy(opts *option.Options) error
+type IMigrate[Options any] interface {
+	Copy(mOpts *Options, cbOpts *option.Options) error
 }
 
-type Migrate struct {
-	Source      common.ISource
-	Analyzer    index.Analyzer
+type Migrate[T any, Options any] struct {
+	Source      common.ISource[T, Options]
+	Analyzer    index.Analyzer[T]
 	Destination common.IDestination
 }
 
-func (m Migrate) Copy(opts *option.Options) error {
+func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options) error {
 
-	err := m.Source.Init(opts)
+	err := m.Source.Init(mOpts)
 	if err != nil {
 		return err
 	}
-	err = m.Destination.Init(opts)
+	err = m.Destination.Init(cbOpts)
 	if err != nil {
 		return err
 	}
@@ -69,13 +69,13 @@ func (m Migrate) Copy(opts *option.Options) error {
 		return err
 	}
 
-	fieldPaths := m.Analyzer.GetIndexFieldPath()
-	err = m.Destination.CreateIndexes(indexes, fieldPaths)
+	cbIndexes := m.Analyzer.GetCouchbaseQuery(cbOpts.Bucket, cbOpts.Scope, cbOpts.Collection)
+	err = m.Destination.CreateIndexes(cbIndexes)
 	return err
 }
 
-func NewMigrator(source common.ISource, destination common.IDestination, analyzer index.Analyzer) IMigrate {
-	return Migrate{
+func NewMigrator[T any, Options any](source common.ISource[T, Options], destination common.IDestination, analyzer index.Analyzer[T]) IMigrate[Options] {
+	return Migrate[T, Options]{
 		Source:      source,
 		Destination: destination,
 		Analyzer:    analyzer,

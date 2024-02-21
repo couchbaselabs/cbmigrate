@@ -12,7 +12,6 @@ import (
 	"github.com/couchbaselabs/cbmigrate/internal/common"
 	"github.com/couchbaselabs/cbmigrate/internal/mongo"
 	mOpts "github.com/couchbaselabs/cbmigrate/internal/mongo/option"
-	"github.com/couchbaselabs/cbmigrate/internal/option"
 	mock_test "github.com/couchbaselabs/cbmigrate/testhelper/mock"
 )
 
@@ -22,11 +21,9 @@ var _ = Describe("mongo service", func() {
 			ctrl         *gomock.Controller
 			db           *mock_test.MockMongoIRepo
 			cursor       *mock_test.MockMongoICursor
-			mongoService common.ISource
+			mongoService common.ISource[mongo.Index, mOpts.Options]
 		)
-		opts := &option.Options{
-			MOpts: &mOpts.Options{Namespace: &mOpts.Namespace{Collection: "test_col"}},
-		}
+		opts := &mOpts.Options{Namespace: &mOpts.Namespace{Collection: "test_col"}}
 		BeforeEach(func() {
 			ctrl = gomock.NewController(GinkgoT())
 			db = mock_test.NewMockMongoIRepo(ctrl)
@@ -40,11 +37,11 @@ var _ = Describe("mongo service", func() {
 			It("output data should match with the test data", func() {
 				testData := []map[string]interface{}{{"a": 1}, {"b": 1}}
 				ctx := context.Background()
-				db.EXPECT().Init(opts.MOpts).Return(nil)
+				db.EXPECT().Init(opts).Return(nil)
 				err := mongoService.Init(opts)
 				Expect(err).To(BeNil())
 
-				db.EXPECT().Find(opts.MOpts.Collection, ctx, bson.M{}, gomock.Any()).Return(cursor, nil)
+				db.EXPECT().Find(opts.Collection, ctx, bson.M{}, gomock.Any()).Return(cursor, nil)
 				cursor.EXPECT().Close(ctx).Return(nil)
 				dataCount := len(testData)
 				n := -1
@@ -81,18 +78,18 @@ var _ = Describe("mongo service", func() {
 		Context("failure", func() {
 			It("error in connection initialization", func() {
 				dbConInitError := errors.New("error in initializing db connection")
-				db.EXPECT().Init(opts.MOpts).Return(dbConInitError)
+				db.EXPECT().Init(opts).Return(dbConInitError)
 				err := mongoService.Init(opts)
 				Expect(err).NotTo(BeNil())
 				Expect(err).To(Equal(dbConInitError))
 			})
 			It("error in find the document", func() {
 				dbFindError := errors.New("error in finding the document")
-				db.EXPECT().Init(opts.MOpts).Return(nil)
+				db.EXPECT().Init(opts).Return(nil)
 				err := mongoService.Init(opts)
 				Expect(err).To(BeNil())
 				ctx := context.Background()
-				db.EXPECT().Find(opts.MOpts.Collection, ctx, bson.M{}, gomock.Any()).Return(nil, dbFindError)
+				db.EXPECT().Find(opts.Collection, ctx, bson.M{}, gomock.Any()).Return(nil, dbFindError)
 				stream := make(chan map[string]interface{})
 				err = mongoService.StreamData(ctx, stream)
 				Expect(err).NotTo(BeNil())
@@ -101,11 +98,11 @@ var _ = Describe("mongo service", func() {
 			It("error in decoding the document", func() {
 				testData := []map[string]interface{}{{"a": 1}, {"b": 1}}
 				decodeError := errors.New("error in decoding the document")
-				db.EXPECT().Init(opts.MOpts).Return(nil)
+				db.EXPECT().Init(opts).Return(nil)
 				err := mongoService.Init(opts)
 				Expect(err).To(BeNil())
 				ctx := context.Background()
-				db.EXPECT().Find(opts.MOpts.Collection, ctx, bson.M{}, gomock.Any()).Return(cursor, nil)
+				db.EXPECT().Find(opts.Collection, ctx, bson.M{}, gomock.Any()).Return(cursor, nil)
 				cursor.EXPECT().Next(ctx).Times(2).DoAndReturn(func(ctx context.Context) bool {
 					return true
 				})
@@ -138,11 +135,11 @@ var _ = Describe("mongo service", func() {
 			It("error in cursor", func() {
 				testData := []map[string]interface{}{{"a": 1}, {"b": 1}}
 				cursorError := errors.New("error in cursor")
-				db.EXPECT().Init(opts.MOpts).Return(nil)
+				db.EXPECT().Init(opts).Return(nil)
 				err := mongoService.Init(opts)
 				Expect(err).To(BeNil())
 				ctx := context.Background()
-				db.EXPECT().Find(opts.MOpts.Collection, ctx, bson.M{}, gomock.Any()).Return(cursor, nil)
+				db.EXPECT().Find(opts.Collection, ctx, bson.M{}, gomock.Any()).Return(cursor, nil)
 				ci := 0
 				cursor.EXPECT().Next(ctx).Times(2).DoAndReturn(func(ctx context.Context) bool {
 					if ci == 1 {

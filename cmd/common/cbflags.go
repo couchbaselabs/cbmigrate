@@ -62,9 +62,9 @@ var cbClientKeyPassword = &flag.StringFlag{
 var cbGenerateKey = &flag.StringFlag{
 	Name: CBGenerateKey,
 	Usage: "Specifies a key expression used for generating a key for each document imported." +
-		" See the examples for more information on specifying key generators." +
-		" If the resulting key is not unique the values will be overridden, resulting in fewer documents than expected being imported." +
-		" To ensure that the key is unique add #UUID# or #PrimaryKey# to the key generator expression.",
+		" This option allows for the creation of unique document keys in Couchbase by combining static text," +
+		" field values (denoted by %fieldname%), and custom generators (like #UUID#) in a format like \"key::%name%::#UUID#\"",
+	Value: "%_id%",
 }
 
 var cbCACert = &flag.StringFlag{

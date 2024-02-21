@@ -1,11 +1,13 @@
 package mongo
 
 import (
+	"fmt"
 	"github.com/couchbaselabs/cbmigrate/internal/index"
 )
 
 type IndexFieldAnalyzer struct {
-	keys map[string]*key
+	indexes []Index
+	keys    map[string]*key
 }
 
 type occurrence int
@@ -15,13 +17,14 @@ type key struct {
 	occurrence int
 }
 
-func NewIndexFieldAnalyzer() index.Analyzer {
+func NewIndexFieldAnalyzer() index.Analyzer[Index] {
 	return &IndexFieldAnalyzer{
 		keys: make(map[string]*key),
 	}
 }
 
-func (a *IndexFieldAnalyzer) Init(indexes []index.Index) {
+func (a *IndexFieldAnalyzer) Init(indexes []Index) {
+	a.indexes = indexes
 	for _, i := range indexes {
 		for _, key := range i.Keys {
 			a.keys[key.Field] = nil
@@ -56,8 +59,8 @@ func (a *IndexFieldAnalyzer) AnalyzeData(data map[string]interface{}) {
 	}
 }
 
-func (a *IndexFieldAnalyzer) GetIndexFieldPath() index.IndexFieldPath {
-	var indexKeyAlias = make(index.IndexFieldPath)
+func (a *IndexFieldAnalyzer) GetIndexFieldPath() IndexFieldPath {
+	var indexKeyAlias = make(IndexFieldPath)
 	for field, v := range a.keys {
 		f := field
 		maxOccurrence := occurrence(0)
@@ -73,4 +76,22 @@ func (a *IndexFieldAnalyzer) GetIndexFieldPath() index.IndexFieldPath {
 		indexKeyAlias[field] = f
 	}
 	return indexKeyAlias
+}
+
+func (a *IndexFieldAnalyzer) GetCouchbaseQuery(bucket, scope, collection string) []index.Index {
+	fieldPath := a.GetIndexFieldPath()
+	var indexes []index.Index
+	for _, mindex := range a.indexes {
+		cindex := index.Index{
+			Name: mindex.Name,
+		}
+		if mindex.NotSupported {
+			cindex.Error = fmt.Errorf("%s index not supported", mindex.Name)
+		}
+		query, err := CreateIndexQuery(bucket, scope, collection, mindex, fieldPath)
+		cindex.Query = query
+		cindex.Error = err
+		indexes = append(indexes, cindex)
+	}
+	return indexes
 }

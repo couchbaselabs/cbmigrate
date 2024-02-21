@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/couchbaselabs/cbmigrate/internal/option"
+	"github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
 )
 
 func interfaceToString(value interface{}) string {
@@ -71,8 +71,7 @@ func NewCouchbase(db repo.IRepo) common.IDestination {
 	}
 }
 
-func (c *Couchbase) Init(opts *option.Options) error {
-	cbOpts := opts.CBOpts
+func (c *Couchbase) Init(cbOpts *option.Options) error {
 	c.bucket = cbOpts.Bucket
 	c.scope = cbOpts.Scope
 	c.collection = cbOpts.Collection
@@ -85,14 +84,19 @@ func (c *Couchbase) Init(opts *option.Options) error {
 			switch {
 			case length > 1 && k[0] == '%' && k[length-1] == '%':
 				c.key = append(c.key, docKey{kind: "field", value: k[1 : length-1]})
-			case k == "UUID":
-				c.key = append(c.key, docKey{kind: "UUID", value: k})
+			case length > 1 && k[0] == '#' && k[length-1] == '#':
+				switch k[1 : length-1] {
+				case "UUID":
+					c.key = append(c.key, docKey{kind: "UUID", value: k})
+				default:
+					return fmt.Errorf("custom generator %s is not supported", k[1:length-1])
+				}
 			default:
 				c.key = append(c.key, docKey{kind: "string", value: k})
 			}
 		}
 	}
-	err := c.db.Init(cbOpts.Cluster, opts.CBOpts)
+	err := c.db.Init(cbOpts.Cluster, cbOpts)
 	if err != nil {
 		return err
 	}
@@ -194,13 +198,13 @@ func (c *Couchbase) UpsertData() error {
 	return nil
 }
 
-func (c *Couchbase) CreateIndexes(indexes []index.Index, fieldPaths index.IndexFieldPath) error {
+func (c *Couchbase) CreateIndexes(indexes []index.Index) error {
 	for _, index := range indexes {
-		if index.NotSupported {
-			zap.S().Errorf("%s index not supported", index.Name)
+		if index.Error != nil {
+			zap.S().Errorf("error %#v occured while creating index query %s", index.Error, index.Name)
 			continue
 		}
-		err := c.db.CreateIndex(c.scope, c.collection, index, fieldPaths)
+		err := c.db.CreateIndex(index.Query)
 		if err != nil {
 			zap.S().Errorf("error %#v occured while creating index %s", err, index.Name)
 		}

@@ -195,7 +195,16 @@ func NewCommand() *cobra.Command {
 	flags = append(flags, common.GetCBFlags()...)
 	examples := []common.Example{
 		{
-			Value: "cbmigrate mongo ",
+			Value: "cbmigrate mongo --mongodb-uri uri --mongodb-database db-name --mongodb-collection collection-name --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name",
+			Usage: "Imports data from MongoDB to Couchbase, using the MongoDB collection name as the Couchbase collection name. The default generator key is set to %_id%, leveraging MongoDB's unique identifier for each document.",
+		},
+		{
+			Value: "cbmigrate mongo --mongodb-uri uri --mongodb-database db-name --mongodb-collection collection-name --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name --cb-collection collection-name --cb-generate-key key::%name.first_name%::%name.last_name%",
+			Usage: "Imports the data from mongo to couchbase, allowing the use of dot notation (e.g., name.first_name) to reference nested fields. However, it does not support referencing fields within an array of documents.",
+		},
+		{
+			Value: "cbmigrate mongo --mongodb-uri uri --mongodb-database db-name --mongodb-collection collection-name --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name --cb-collection collection-name --cb-generate-key key::#UUID#",
+			Usage: "Imports the data from mongo to couchbase.",
 		},
 	}
 	return common.NewCommand("mongo", []string{"m"}, examples, "", "", flags)
