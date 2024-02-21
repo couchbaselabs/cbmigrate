@@ -85,12 +85,14 @@ func (a *IndexFieldAnalyzer) GetCouchbaseQuery(bucket, scope, collection string)
 		cindex := index.Index{
 			Name: mindex.Name,
 		}
-		if mindex.NotSupported {
+		switch {
+		case mindex.NotSupported:
 			cindex.Error = fmt.Errorf("%s index not supported", mindex.Name)
+		default:
+			query, err := CreateIndexQuery(bucket, scope, collection, mindex, fieldPath)
+			cindex.Query = query
+			cindex.Error = err
 		}
-		query, err := CreateIndexQuery(bucket, scope, collection, mindex, fieldPath)
-		cindex.Query = query
-		cindex.Error = err
 		indexes = append(indexes, cindex)
 	}
 	return indexes
