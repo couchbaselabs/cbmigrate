@@ -311,8 +311,7 @@ func ProcessField(field string, value interface{}, fieldPath IndexFieldPath) (st
 	default:
 		if strings.Index(field, "[]") > -1 {
 			conditionSuffix := fmt.Sprintf("%s %#v", "=", value)
-			arrFieldExpression := GenerateArrayFilterExpression(field, false)
-			return fmt.Sprintf(arrFieldExpression, conditionSuffix), nil
+			return GenerateArrayFilterExpression(field, false, conditionSuffix), nil
 		}
 		// Handle direct equality as a special case
 		return fmt.Sprintf("%s = %#v", formatFieldReference(field), value), nil
@@ -365,8 +364,8 @@ func convertOperator(field string, operators map[string]interface{}) (string, er
 		condition := ""
 		if strings.Index(field, "[]") > -1 {
 			conditionSuffix := fmt.Sprintf("%s %#v", couchbaseOp, val)
-			arrFieldExpression := GenerateArrayFilterExpression(field, isTypeOperand)
-			condition = fmt.Sprintf(arrFieldExpression, conditionSuffix)
+			condition = GenerateArrayFilterExpression(field, isTypeOperand, conditionSuffix)
+
 		} else {
 			if isTypeOperand {
 				field = "type(" + formatFieldReference(field) + ")"
@@ -402,42 +401,45 @@ func getCBType(val interface{}) (string, error) {
 			types = append(types, pv)
 		}
 		return strings.Join(types, ","), nil
-	default:
-		return "", fmt.Errorf("invalid type %#v", reflect.TypeOf(val).String())
 	}
-	return "", nil
+	return "", fmt.Errorf("invalid type %#v", reflect.TypeOf(val).String())
 }
 
-func GenerateArrayFilterExpression(input string, isTypeFilter bool) string {
+func GenerateArrayFilterExpression(input string, isTypeFilter bool, condition string) string {
 	parts := strings.Split(input, "[]")
 	for i := 0; i < len(parts); i++ {
 		parts[i] = strings.TrimPrefix(parts[i], ".")
 	}
-	return createArrayFilterExpression(parts, "", 0, isTypeFilter)
+	if isTypeFilter {
+		if parts[len(parts)-1] == "" {
+			parts = parts[:len(parts)-1]
+		}
+		if len(parts) == 1 {
+			return fmt.Sprintf("type(%s) %s", formatFieldReference(parts[0]), condition)
+		}
+	}
+	return createArrayFilterExpression(parts, "", 0, isTypeFilter, condition)
 }
 
-func createArrayFilterExpression(parts []string, parent string, l int, isTypeFilter bool) string {
+func createArrayFilterExpression(parts []string, parent string, l int, isTypeFilter bool, condition string) string {
 	l++
 	if len(parts) == 1 {
 		if parts[0] == "" {
 			filter := parent
-			if isTypeFilter {
-				filter = "type(" + filter + ")"
-			}
-			return fmt.Sprintf("%s %s", filter, "%s")
+			return fmt.Sprintf("%s %s", filter, condition)
 		}
 		filter := formatFieldReference(parts[0])
 		if isTypeFilter {
-			filter = "type(" + filter + ")"
+			return fmt.Sprintf("type(%s.%s) %s", parent, filter, condition)
 		}
-		return fmt.Sprintf("%s.%s %s", parent, filter, "%s")
+		return fmt.Sprintf("%s.%s %s", parent, filter, condition)
 	}
 	item := fmt.Sprintf("`l%dItem`", l)
 	items := formatFieldReference(parts[0])
 	if parent != "" {
 		items = parent + "." + items
 	}
-	inner := createArrayFilterExpression(parts[1:], item, l, isTypeFilter)
+	inner := createArrayFilterExpression(parts[1:], item, l, isTypeFilter, condition)
 
 	return fmt.Sprintf("ANY %s IN %s SATISFIES (%s) END", item, items, inner)
 }

@@ -71,7 +71,7 @@ var _ = Describe("mongo to couchbase index ", func() {
 			})
 		})
 	})
-	Describe("generate partial filter expression", func() {
+	Describe("process field in array filter expression", func() {
 		Context("success", func() {
 			It("output data should match with the test data", func() {
 				fieldPath := mongo.IndexFieldPath{}
@@ -282,6 +282,41 @@ var _ = Describe("mongo to couchbase index ", func() {
 				_, err := mongo.CreateIndexQuery(bucket, scope, collection, index, fieldPath)
 				Expect(err).NotTo(BeNil())
 				Expect(err.Error()).To(Equal("multiple array reference"))
+			})
+		})
+	})
+
+	Describe("generate array filter expression", func() {
+		Context("success", func() {
+			It("case 1", func() {
+				key := "k2[].n1k1[].n2k1.n3k1"
+				condition := " = \"string\""
+				output := mongo.GenerateArrayFilterExpression(key, true, condition)
+				Expect(output).To(Equal("ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (type(`l2Item`.`n2k1`.`n3k1`)  = \"string\") END) END"))
+			})
+			It("case 2", func() {
+				key := "k2[].n1k1[].n2k1.n3k1[]"
+				condition := " = \"string\""
+				output := mongo.GenerateArrayFilterExpression(key, true, condition)
+				Expect(output).To(Equal("ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (type(`l2Item`.`n2k1`.`n3k1`)  = \"string\") END) END"))
+			})
+			It("case 3", func() {
+				key := "k2[].n1k1[].n2k1.n3k1[]"
+				condition := " = \"array\""
+				output := mongo.GenerateArrayFilterExpression(key, true, condition)
+				Expect(output).To(Equal("ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (type(`l2Item`.`n2k1`.`n3k1`)  = \"array\") END) END"))
+			})
+			It("case 4", func() {
+				key := "k2[]"
+				condition := " = \"array\""
+				output := mongo.GenerateArrayFilterExpression(key, true, condition)
+				Expect(output).To(Equal("type(`k2`)  = \"array\""))
+			})
+			It("case 5", func() {
+				key := "k2[].n1k1[].n2k1.n3k1[]"
+				condition := " = \"val\""
+				output := mongo.GenerateArrayFilterExpression(key, false, condition)
+				Expect(output).To(Equal("ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (ANY `l3Item` IN `l2Item`.`n2k1`.`n3k1` SATISFIES (`l3Item`  = \"val\") END) END) END"))
 			})
 		})
 	})
