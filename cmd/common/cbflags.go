@@ -99,7 +99,6 @@ var cbCollection = &flag.StringFlag{
 func GetCBFlags() []flag.Flag {
 	flags := []flag.Flag{
 		cbCluster,
-
 		&flag.CompositeFlag{
 			Flags: []flag.Flag{
 				&flag.CompositeFlag{
@@ -129,6 +128,7 @@ func GetCBFlags() []flag.Flag {
 		cbBucket,
 		cbScope,
 		cbCollection,
+		GetVerboseFlag(),
 	}
 	return flags
 }

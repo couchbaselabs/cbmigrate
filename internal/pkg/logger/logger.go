@@ -5,7 +5,9 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func Init() *zap.Logger {
+var logger *zap.Logger
+
+func Init() {
 	// Create a configuration for the logger.
 	config := zap.Config{
 		Level:            zap.NewAtomicLevelAt(zap.InfoLevel),
@@ -29,6 +31,9 @@ func Init() *zap.Logger {
 	defer logger.Sync()
 	// Replace the global logger.
 	zap.ReplaceGlobals(logger)
-	return logger
+}
 
+func EnableDebugLevel() {
+	logger = logger.WithOptions(zap.IncreaseLevel(zap.DebugLevel))
+	zap.ReplaceGlobals(logger)
 }

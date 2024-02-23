@@ -14,7 +14,7 @@ func init() {
 }
 
 var (
-	Version = "1.0.0" // This will be overridden by -ldflags
+	Version = "" // - Ldflags will override this
 )
 
 func main() {

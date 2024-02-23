@@ -50,15 +50,28 @@ func NewCommand(name string, alias []string, examples []Example, short string, l
 	}
 	flags = FlattenFlags(flags)
 	for _, fi := range flags {
+		flagSet := cmd.Flags()
 		switch f := fi.(type) {
 		case *flag.Int64Flag:
-			cmd.Flags().Int64P(f.Name, f.Alias, f.Value, f.Usage)
+			if f.IsPersistentFlag() {
+				flagSet = cmd.PersistentFlags()
+			}
+			flagSet.Int64P(f.Name, f.Alias, f.Value, f.Usage)
 		case *flag.StringFlag:
-			cmd.Flags().StringP(f.Name, f.Alias, f.Value, f.Usage)
+			if f.IsPersistentFlag() {
+				flagSet = cmd.PersistentFlags()
+			}
+			flagSet.StringP(f.Name, f.Alias, f.Value, f.Usage)
 		case *flag.StringSliceFlag:
-			cmd.Flags().StringSliceP(f.Name, f.Alias, f.Value, f.Usage)
+			if f.IsPersistentFlag() {
+				flagSet = cmd.PersistentFlags()
+			}
+			flagSet.StringSliceP(f.Name, f.Alias, f.Value, f.Usage)
 		case *flag.BoolFlag:
-			cmd.Flags().BoolP(f.Name, f.Alias, f.Value, f.Usage)
+			if f.IsPersistentFlag() {
+				flagSet = cmd.PersistentFlags()
+			}
+			flagSet.BoolP(f.Name, f.Alias, f.Value, f.Usage)
 		default:
 			panic("flag type not supported for the command " + name)
 		}

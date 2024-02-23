@@ -163,14 +163,14 @@ func (c *Couchbase) ProcessData(data map[string]interface{}) error {
 
 	// to track the number of documents processed.
 	c.processedCount++
-	// insert and rest docs when length of the docs is equal to the batch size
+	// insert and rest docs when the length of the docs is equal to the batch size
 	if len(c.batchDocs)%c.batchSize == 0 {
 		err := c.UpsertData()
 		if err != nil {
 			return err
 		}
 		zap.S().Infof("%d documents processed", c.processedCount)
-		zap.S().Infof("last processed document %v", id.String())
+		zap.S().Debugf("last processed document %v", id.String())
 	}
 	return nil
 }
@@ -187,7 +187,7 @@ func (c *Couchbase) UpsertData() error {
 	if err != nil {
 		return err
 	}
-	// Be sure to check each individual operation for errors too.
+	// Be sure to check each operation for errors too.
 	for _, op := range c.batchDocs {
 		upsertOp := op.(*gocb.UpsertOp)
 		if upsertOp.Err != nil {
@@ -199,6 +199,7 @@ func (c *Couchbase) UpsertData() error {
 }
 
 func (c *Couchbase) CreateIndexes(indexes []index.Index) error {
+
 	for _, index := range indexes {
 		if index.Error != nil {
 			zap.S().Errorf("error %#v occured while creating index query %s", index.Error, index.Name)
@@ -208,7 +209,7 @@ func (c *Couchbase) CreateIndexes(indexes []index.Index) error {
 		if err != nil {
 			zap.S().Errorf("error %#v occured while creating index %s", err, index.Name)
 		}
-		zap.S().Infof("index %s created successfully", index.Name)
+		zap.S().Debugf("index %s created successfully", index.Name)
 	}
 	return nil
 }

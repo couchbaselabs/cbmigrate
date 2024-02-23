@@ -7,12 +7,13 @@ import (
 
 // Int64Flag pFlag wrapper
 type Int64Flag struct {
-	Name     string
-	Alias    string
-	Usage    string
-	Value    int64
-	Required bool
-	Hidden   bool
+	Name           string
+	Alias          string
+	Usage          string
+	Value          int64
+	Required       bool
+	Hidden         bool
+	PersistentFlag bool
 }
 
 func (f *Int64Flag) isFlag() bool {
@@ -41,4 +42,8 @@ func (f *Int64Flag) ParseToString() string {
 
 func (f *Int64Flag) UniqueKey() string {
 	return f.Name // Assuming Name is unique across all flags
+}
+
+func (f *Int64Flag) IsPersistentFlag() bool {
+	return f.PersistentFlag
 }

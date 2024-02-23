@@ -7,12 +7,13 @@ import (
 
 // StringSliceFlag pFlag wrapper
 type StringSliceFlag struct {
-	Name     string
-	Alias    string
-	Usage    string
-	Value    []string
-	Required bool
-	Hidden   bool
+	Name           string
+	Alias          string
+	Usage          string
+	Value          []string
+	Required       bool
+	Hidden         bool
+	PersistentFlag bool
 }
 
 func (f *StringSliceFlag) isFlag() bool {
@@ -41,4 +42,8 @@ func (f *StringSliceFlag) ParseToString() string {
 
 func (f *StringSliceFlag) UniqueKey() string {
 	return f.Name // Assuming Name is unique across all flags
+}
+
+func (f *StringSliceFlag) IsPersistentFlag() bool {
+	return f.PersistentFlag
 }

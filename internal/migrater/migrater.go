@@ -6,6 +6,7 @@ import (
 	"github.com/couchbaselabs/cbmigrate/internal/common"
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
 	"github.com/couchbaselabs/cbmigrate/internal/index"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -38,6 +39,7 @@ func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options) error 
 	}
 	m.Analyzer.Init(indexes)
 
+	zap.S().Info("data migration started")
 	var mChan = make(chan map[string]interface{}, 10000)
 	g := errgroup.Group{}
 	var sErr, dErr error
@@ -68,9 +70,14 @@ func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options) error 
 	if err != nil {
 		return err
 	}
-
+	zap.S().Info("data migration completed")
 	cbIndexes := m.Analyzer.GetCouchbaseQuery(cbOpts.Bucket, cbOpts.Scope, cbOpts.Collection)
+	zap.S().Info("index migration started")
 	err = m.Destination.CreateIndexes(cbIndexes)
+	if err != nil {
+		return err
+	}
+	zap.S().Info("index migration completed")
 	return err
 }
 

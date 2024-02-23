@@ -6,16 +6,21 @@ import (
 
 // BoolFlag pFlag wrapper
 type BoolFlag struct {
-	Name     string
-	Alias    string
-	Usage    string
-	Value    bool
-	Required bool
-	Hidden   bool
+	Name           string
+	Alias          string
+	Usage          string
+	Value          bool
+	Required       bool
+	Hidden         bool
+	PersistentFlag bool
 }
 
 func (f *BoolFlag) isFlag() bool {
 	return true
+}
+
+func (f *BoolFlag) IsPersistentFlag() bool {
+	return f.PersistentFlag
 }
 
 // GetName get flag name

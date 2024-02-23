@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
+	"github.com/couchbaselabs/cbmigrate/internal/pkg/logger"
 	"os"
 	"strings"
 
@@ -108,6 +109,12 @@ func BuildURI(host, port string) string {
 }
 
 func ParesCouchbaseOptions(cmd *cobra.Command, collection string) (*option.Options, error) {
+
+	verbose, _ := cmd.Flags().GetBool(Verbose)
+	if verbose {
+		SetVerboseEnabled()
+		logger.EnableDebugLevel()
+	}
 	var err error
 	cbopts := &option.Options{
 		Auth:      &option.Auth{},

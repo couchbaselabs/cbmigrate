@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 
 	"github.com/couchbaselabs/cbmigrate/cmd/common"
 	"github.com/couchbaselabs/cbmigrate/cmd/mongo/command"
@@ -29,17 +30,17 @@ func NewAction() *Action {
 
 func (a *Action) RunE(cmd *cobra.Command, args []string) error {
 
-	var missingRequiredOpitons []string
+	var missingRequiredOptions []string
 	switch {
 	case !cmd.Flags().Changed(command.MongoDBURI) && !cmd.Flags().Changed(command.MongoDBHost):
-		missingRequiredOpitons = append(missingRequiredOpitons, command.MongoDBURI)
+		missingRequiredOptions = append(missingRequiredOptions, command.MongoDBURI)
 		fallthrough
 	case !cmd.Flags().Changed(command.MongoDBCollection):
-		missingRequiredOpitons = append(missingRequiredOpitons, command.MongoDBCollection)
+		missingRequiredOptions = append(missingRequiredOptions, command.MongoDBCollection)
 	}
-	missingRequiredOpitons = append(missingRequiredOpitons, common.CouchBaseMissingRequiredOptions(cmd)...)
-	if len(missingRequiredOpitons) > 0 {
-		err := common.ReqFieldsError(missingRequiredOpitons)
+	missingRequiredOptions = append(missingRequiredOptions, common.CouchBaseMissingRequiredOptions(cmd)...)
+	if len(missingRequiredOptions) > 0 {
+		err := common.ReqFieldsError(missingRequiredOptions)
 		if err != nil {
 			return err
 		}
@@ -75,17 +76,17 @@ func (a *Action) RunE(cmd *cobra.Command, args []string) error {
 	mopts.Namespace.DB, _ = cmd.Flags().GetString(command.MongoDBDatabase)
 	mopts.Namespace.Collection, _ = cmd.Flags().GetString(command.MongoDBCollection)
 
-	cbopts, err := common.ParesCouchbaseOptions(cmd, mopts.Namespace.Collection)
+	cbOpts, err := common.ParesCouchbaseOptions(cmd, mopts.Namespace.Collection)
 	if err != nil {
 		return err
 	}
-	if cbopts.GeneratedKey == "" {
-		cbopts.GeneratedKey = " %_id%"
+	if cbOpts.GeneratedKey == "" {
+		cbOpts.GeneratedKey = " %_id%"
 	}
 
-	err = a.migrate.Copy(mopts, cbopts)
+	err = a.migrate.Copy(mopts, cbOpts)
 	if err != nil {
-		return err
+		zap.S().Fatal(err)
 	}
 	return nil
 }

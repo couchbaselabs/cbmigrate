@@ -7,12 +7,13 @@ import (
 
 // StringFlag pFlag wrapper
 type StringFlag struct {
-	Name     string
-	Alias    string
-	Usage    string
-	Value    string
-	Required bool
-	Hidden   bool
+	Name           string
+	Alias          string
+	Usage          string
+	Value          string
+	Required       bool
+	Hidden         bool
+	PersistentFlag bool
 }
 
 func (f *StringFlag) isFlag() bool {
@@ -41,4 +42,8 @@ func (f *StringFlag) ParseToString() string {
 
 func (f *StringFlag) UniqueKey() string {
 	return f.Name // Assuming Name is unique across all flags
+}
+
+func (f *StringFlag) IsPersistentFlag() bool {
+	return f.PersistentFlag
 }
