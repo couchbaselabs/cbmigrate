@@ -7,10 +7,10 @@ import (
 
 var logger *zap.Logger
 
-func Init() {
+func Init(logLevel zapcore.Level) {
 	// Create a configuration for the logger.
 	config := zap.Config{
-		Level:            zap.NewAtomicLevelAt(zap.InfoLevel),
+		Level:            zap.NewAtomicLevelAt(logLevel),
 		Development:      false,
 		Encoding:         "console",
 		EncoderConfig:    zap.NewProductionEncoderConfig(),
@@ -23,8 +23,8 @@ func Init() {
 	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	// Disable timestamp
 	config.EncoderConfig.TimeKey = ""
-
-	logger, err := config.Build()
+	var err error
+	logger, err = config.Build()
 	if err != nil {
 		panic(err)
 	}
@@ -34,6 +34,5 @@ func Init() {
 }
 
 func EnableDebugLevel() {
-	logger = logger.WithOptions(zap.IncreaseLevel(zap.DebugLevel))
-	zap.ReplaceGlobals(logger)
+	Init(zapcore.DebugLevel)
 }

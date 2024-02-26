@@ -25,14 +25,14 @@ type ICursor interface {
 }
 
 type Indexes struct {
-	Name                    string                 `json:"name"`
-	TwoDSphereIndexVersion  interface{}            `json:"2dsphereIndexVersion"`
-	Key                     bson.D                 `json:"key"`
-	PartialFilterExpression map[string]interface{} `json:"partialFilterExpression"`
-	Sparse                  bool                   `json:"sparse"`
-	Weights                 interface{}            `json:"weights"`
-	Collation               interface{}            `json:"collation"`
-	ExpireAfterSeconds      interface{}            `json:"expireAfterSeconds"`
+	Name                    string      `json:"name"`
+	TwoDSphereIndexVersion  interface{} `json:"2dsphereIndexVersion"`
+	Key                     bson.D      `json:"key"`
+	PartialFilterExpression bson.D      `json:"partialFilterExpression"`
+	Sparse                  bool        `json:"sparse"`
+	Weights                 interface{} `json:"weights"`
+	Collation               interface{} `json:"collation"`
+	ExpireAfterSeconds      interface{} `json:"expireAfterSeconds"`
 }
 
 func (i *Indexes) GetName() string {
@@ -42,7 +42,7 @@ func (i *Indexes) GetKey() bson.D {
 	return i.Key
 }
 
-func (i *Indexes) GetPartialExpression() map[string]interface{} {
+func (i *Indexes) GetPartialExpression() bson.D {
 	return i.PartialFilterExpression
 }
 

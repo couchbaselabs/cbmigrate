@@ -7,10 +7,11 @@ import (
 	"github.com/couchbaselabs/cbmigrate/cmd"
 	"github.com/couchbaselabs/cbmigrate/cmd/common"
 	"github.com/couchbaselabs/cbmigrate/internal/pkg/logger"
+	"go.uber.org/zap/zapcore"
 )
 
 func init() {
-	logger.Init()
+	logger.Init(zapcore.InfoLevel)
 }
 
 var (

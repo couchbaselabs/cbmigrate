@@ -5,6 +5,7 @@ import (
 	"github.com/couchbaselabs/cbmigrate/internal/mongo"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.mongodb.org/mongo-driver/bson"
 	"strings"
 )
 
@@ -88,19 +89,28 @@ var _ = Describe("mongo to couchbase index ", func() {
 	Describe("generate partial filter expression", func() {
 		Context("success", func() {
 			It("output data should match with the test data", func() {
-				partialFilter := map[string]interface{}{
-					"k1.n1k1": 1,
-					"$and": []interface{}{
-						map[string]interface{}{
-							"k5": 1,
-						},
-						map[string]interface{}{
-							"$or": []interface{}{
-								map[string]interface{}{
-									"k2.n1k1.n2k1.n3k1": int64(5),
+				partialFilter := bson.D{
+					{Key: "k1.n1k1", Value: 1},
+					{
+						Key: "$and",
+						Value: bson.A{
+							bson.D{
+								{
+									Key:   "k5",
+									Value: 1,
 								},
-								map[string]interface{}{
-									"k2.n1k1.n2k2": float64(10),
+							},
+							bson.D{
+								{
+									Key: "$or",
+									Value: bson.A{
+										bson.D{
+											{Key: "k2.n1k1.n2k1.n3k1", Value: int64(5)},
+										},
+										bson.D{
+											{Key: "k2.n1k1.n2k2", Value: float64(10)},
+										},
+									},
 								},
 							},
 						},
@@ -121,12 +131,20 @@ var _ = Describe("mongo to couchbase index ", func() {
 				Expect(result).To(Equal(output))
 			})
 			It("generate partial filter expression with type", func() {
-				partialFilter := map[string]interface{}{
-					"a": map[string]interface{}{
-						"$type": int32(1),
+				partialFilter := bson.D{
+					{
+						Key: "a", Value: bson.D{
+							{
+								Key: "$type", Value: int32(1),
+							},
+						},
 					},
-					"b": map[string]interface{}{
-						"$type": "string",
+					{
+						Key: "b", Value: bson.D{
+							{
+								Key: "$type", Value: "string",
+							},
+						},
 					},
 				}
 				fieldPath := mongo.IndexFieldPath{}
@@ -183,7 +201,7 @@ var _ = Describe("mongo to couchbase index ", func() {
 				}
 
 				Output := fmt.Sprintf(
-					"create index `%s` on `%s`.`%s`.`%s` (%s) ",
+					"create index `%s` on `%s`.`%s`.`%s` (%s)  USING GSI WITH {\"defer_build\":true}",
 					index.Name, bucket, scope, collection, strings.Join(fields, ","))
 				query, err := mongo.CreateIndexQuery(bucket, scope, collection, index, fieldPath)
 				Expect(err).To(BeNil())
@@ -196,23 +214,33 @@ var _ = Describe("mongo to couchbase index ", func() {
 			})
 			It("output data should match with the test data with partial filter", func() {
 				//pfStr := `{"k1.n1k1":1, "$and":[{"k5":1},{"$or": [{"k2.n1k1.n2k1.n3k1": 5}, {"k2.n1k1.n2k2": 10}, {"k2.n1k1.n2k1.n3k2.n4k1" : {"$gte": 100}}]}]}`
-				partialFilter := map[string]interface{}{
-					"k1.n1k1": 1,
-					"$and": []interface{}{
-						map[string]interface{}{
-							"k5": 1,
-						},
-						map[string]interface{}{
-							"$or": []interface{}{
-								map[string]interface{}{
-									"k2.n1k1.n2k1.n3k1": int64(5),
-								},
-								map[string]interface{}{
-									"k2.n1k1.n2k2": float64(10),
-								},
-								map[string]interface{}{
-									"k2.n1k1.n2k1.n3k2.n4k1": map[string]interface{}{
-										"$gte": 100,
+
+				partialFilter := bson.D{
+					{Key: "k1.n1k1", Value: 1},
+					{
+						Key: "$and",
+						Value: bson.A{
+							bson.D{
+								{Key: "k5", Value: 1},
+							},
+							bson.D{
+								{
+									Key: "$or",
+									Value: bson.A{
+										bson.D{
+											{Key: "k2.n1k1.n2k1.n3k1", Value: int64(5)},
+										},
+										bson.D{
+											{Key: "k2.n1k1.n2k2", Value: float64(10)},
+										},
+										bson.D{
+											{
+												Key: "k2.n1k1.n2k1.n3k2.n4k1",
+												Value: bson.D{
+													{Key: "$gte", Value: 100},
+												},
+											},
+										},
 									},
 								},
 							},
@@ -247,7 +275,7 @@ var _ = Describe("mongo to couchbase index ", func() {
 
 				partialExpression := "WHERE (`k1`.`n1k1` = 1 AND (`k5` = 1 AND (ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k1`.`n3k1` = 5) END) END OR ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k2` = 10) END) END OR ANY `l1Item` IN `k2` SATISFIES (ANY `l2Item` IN `l1Item`.`n1k1` SATISFIES (`l2Item`.`n2k1`.`n3k2`.`n4k1` >= 100) END) END)))"
 				Output := fmt.Sprintf(
-					"create index `%s` on `%s`.`%s`.`%s` (%s) %s",
+					"create index `%s` on `%s`.`%s`.`%s` (%s) %s USING GSI WITH {\"defer_build\":true}",
 					index.Name, bucket, scope, collection, strings.Join(fields, ","), partialExpression)
 				query, err := mongo.CreateIndexQuery(bucket, scope, collection, index, fieldPath)
 				Expect(err).To(BeNil())

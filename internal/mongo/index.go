@@ -3,6 +3,8 @@ package mongo
 import (
 	"errors"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -18,7 +20,7 @@ const (
 type Index struct {
 	Name              string
 	Keys              []Key
-	PartialExpression map[string]interface{}
+	PartialExpression bson.D
 	Unique            bool
 	Sparse            bool
 	NotSupported      bool
@@ -26,6 +28,12 @@ type Index struct {
 type Key struct {
 	Field string
 	Order int
+}
+
+type cbTypeString string
+
+func newCBString(val string) cbTypeString {
+	return cbTypeString(fmt.Sprintf("%#v", val))
 }
 
 // IndexFieldPath is used to have array representation for a particular path
@@ -91,7 +99,7 @@ func CreateIndexQuery(bucket, scope, collection string, index Index, fieldPath I
 		return "", err
 	}
 	query := fmt.Sprintf(
-		"create index `%s` on `%s`.`%s`.`%s` (%s) %s",
+		"create index `%s` on `%s`.`%s`.`%s` (%s) %s USING GSI WITH {\"defer_build\":true}",
 		name, bucket, scope, collection, strings.Join(fields, ","), partialFilter)
 	return query, nil
 }
@@ -215,7 +223,7 @@ func formatFieldReferenceWithAddtionalOptions(field string) string {
 }
 
 // ConvertMongoToCouchbase Convert MongoDB partial filter expression to Couchbase WHERE clause
-func ConvertMongoToCouchbase(expression map[string]interface{}, fieldPath IndexFieldPath) (string, error) {
+func ConvertMongoToCouchbase(expression bson.D, fieldPath IndexFieldPath) (string, error) {
 	exp, err := processExpression(expression, fieldPath)
 	if err != nil {
 		return "", err
@@ -227,10 +235,12 @@ func ConvertMongoToCouchbase(expression map[string]interface{}, fieldPath IndexF
 }
 
 // Recursively process the MongoDB expression
-func processExpression(expression map[string]interface{}, fieldPath IndexFieldPath) (string, error) {
+func processExpression(expression bson.D, fieldPath IndexFieldPath) (string, error) {
 	var conditions []string
 
-	for key, value := range expression {
+	for i := range expression {
+		key := expression[i].Key
+		value := expression[i].Value
 		switch key {
 		case "$and", "$or", "$not":
 			// Directly handle logical operators, translating them to N1QL syntax
@@ -278,9 +288,9 @@ func processLogicalOperator(operator string, value interface{}, fieldPath IndexF
 	}
 
 	switch val := value.(type) {
-	case []interface{}:
+	case primitive.A:
 		for _, expr := range val {
-			condition, err := processExpression(expr.(map[string]interface{}), fieldPath)
+			condition, err := processExpression(expr.(bson.D), fieldPath)
 			if err != nil {
 				return "", err
 			}
@@ -289,7 +299,7 @@ func processLogicalOperator(operator string, value interface{}, fieldPath IndexF
 			}
 		}
 		return fmt.Sprintf("(%s)", strings.Join(conditions, fmt.Sprintf(" %s ", opSymbol))), nil
-	case map[string]interface{}:
+	case bson.D:
 		if operator == "$not" {
 			condition, err := processExpression(val, fieldPath)
 			if err != nil {
@@ -306,23 +316,24 @@ func processLogicalOperator(operator string, value interface{}, fieldPath IndexF
 func ProcessField(field string, value interface{}, fieldPath IndexFieldPath) (string, error) {
 	field = fieldPath.Get(field)
 	switch v := value.(type) {
-	case map[string]interface{}:
+	case bson.D:
 		return convertOperator(field, v)
 	default:
 		if strings.Index(field, "[]") > -1 {
-			conditionSuffix := fmt.Sprintf("%s %#v", "=", value)
+			conditionSuffix := fmt.Sprintf("%s %s", "=", getValue(value))
 			return GenerateArrayFilterExpression(field, false, conditionSuffix), nil
 		}
 		// Handle direct equality as a special case
-		return fmt.Sprintf("%s = %#v", formatFieldReference(field), value), nil
+		return fmt.Sprintf("%s = %s", formatFieldReference(field), getValue(value)), nil
 	}
 }
 
 // Convert MongoDB comparison operators to their Couchbase equivalents
-func convertOperator(field string, operators map[string]interface{}) (string, error) {
+func convertOperator(field string, operators bson.D) (string, error) {
 	var conditions []string
 	isTypeOperand := false
-	for op, val := range operators {
+	for i := range operators {
+		op, val := operators[i].Key, operators[i].Value
 		couchbaseOp := ""
 		switch op {
 		case "$gt":
@@ -353,54 +364,76 @@ func convertOperator(field string, operators map[string]interface{}) (string, er
 				return "", err
 			}
 			val = t
-			if strings.Index(t, ",") > -1 {
+			if strings.Index(string(t), ",") > -1 {
 				couchbaseOp = "IN"
-				val = "(" + t + ")"
 			}
 			isTypeOperand = true
+		case "$in":
+			couchbaseOp = "IN"
 		default:
 			return "", fmt.Errorf("operand %s cannot be parsed to couchbase operand", op)
 		}
 		condition := ""
 		if strings.Index(field, "[]") > -1 {
-			conditionSuffix := fmt.Sprintf("%s %#v", couchbaseOp, val)
+			conditionSuffix := fmt.Sprintf("%s %s", couchbaseOp, getValue(val))
 			condition = GenerateArrayFilterExpression(field, isTypeOperand, conditionSuffix)
 
 		} else {
 			if isTypeOperand {
 				field = "type(" + formatFieldReference(field) + ")"
 			}
-			condition = fmt.Sprintf("%s %s %#v", field, couchbaseOp, val)
+			condition = fmt.Sprintf("%s %s %s", field, couchbaseOp, getValue(val))
 		}
 		conditions = append(conditions, condition)
 	}
 	return strings.Join(conditions, " AND "), nil
 }
 
-func getCBType(val interface{}) (string, error) {
+func getValue(val interface{}) string {
+	switch v := val.(type) {
+	case primitive.ObjectID:
+		return fmt.Sprintf("%#v", v.Hex())
+	case primitive.DateTime:
+		b, _ := v.MarshalJSON()
+		return fmt.Sprintf("%s", string(b))
+	case primitive.Decimal128:
+		return fmt.Sprintf("%#v", v.String())
+	case primitive.A:
+		var values []string
+		for i := range v {
+			values = append(values, getValue(v[i]))
+		}
+		return "[" + strings.Join(values, ",") + "]"
+	case cbTypeString:
+		return string(v)
+	}
+	return fmt.Sprintf("%#v", val)
+}
+
+func getCBType(val interface{}) (cbTypeString, error) {
 	switch v := val.(type) {
 	case int32:
 		pv, ok := mongoCBPartialAlias[strconv.Itoa(int(v))]
 		if !ok {
 			return "", fmt.Errorf("type %d cannot be parsed to couchbase type", v)
 		}
-		return pv, nil
+		return newCBString(pv), nil
 	case string:
 		pv, ok := mongoCBPartialAlias[v]
 		if !ok {
 			return "", fmt.Errorf("type %s cannot be parsed to couchbase type", v)
 		}
-		return pv, nil
-	case []interface{}:
+		return newCBString(pv), nil
+	case []primitive.A:
 		var types []string
 		for _, iv := range v {
 			pv, err := getCBType(iv)
 			if err != nil {
 				return "", err
 			}
-			types = append(types, pv)
+			types = append(types, string(pv))
 		}
-		return strings.Join(types, ","), nil
+		return cbTypeString("[" + strings.Join(types, ",") + "]"), nil
 	}
 	return "", fmt.Errorf("invalid type %#v", reflect.TypeOf(val).String())
 }

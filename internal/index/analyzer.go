@@ -3,6 +3,8 @@ package index
 //go:generate mockgen -source=analyzer.go -destination=../../testhelper/mock/index.go -package=mock_test Analyzer
 
 import (
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 	"strings"
 )
@@ -78,7 +80,7 @@ func NavigatePath(path string, data map[string]interface{}) (string, bool) {
 }
 
 // ExtractKeys traverses a MongoDB filter expression and collects unique field names.
-func ExtractKeys(expression map[string]interface{}) []string {
+func ExtractKeys(expression bson.D) []string {
 	keysMap := make(map[string]bool)
 	collectKeys(expression, keysMap)
 
@@ -92,15 +94,16 @@ func ExtractKeys(expression map[string]interface{}) []string {
 }
 
 // collectKeys is a recursive helper function to traverse the expression.
-func collectKeys(expression map[string]interface{}, keysMap map[string]bool) {
-	for key, value := range expression {
+func collectKeys(expression bson.D, keysMap map[string]bool) {
+	for i := range expression {
+		key, value := expression[i].Key, expression[i].Value
 		if key == "$and" || key == "$or" {
 			switch exprs := value.(type) {
-			case []interface{}:
+			case primitive.A:
 				for _, expr := range exprs {
-					collectKeys(expr.(map[string]interface{}), keysMap)
+					collectKeys(expr.(bson.D), keysMap)
 				}
-			case map[string]interface{}:
+			case bson.D:
 				collectKeys(exprs, keysMap)
 			}
 		} else {
@@ -108,7 +111,7 @@ func collectKeys(expression map[string]interface{}, keysMap map[string]bool) {
 			keysMap[key] = true
 
 			// Check if the value is a map indicating a comparison operation
-			if _, ok := value.(map[string]interface{}); ok {
+			if _, ok := value.(bson.D); ok {
 				// Previously, we had a variable here that was unused.
 				// Since we only want to confirm the type, no further action is needed here.
 			}
