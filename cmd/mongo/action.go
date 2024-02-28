@@ -83,8 +83,8 @@ func (a *Action) RunE(cmd *cobra.Command, args []string) error {
 	if cbOpts.GeneratedKey == "" {
 		cbOpts.GeneratedKey = " %_id%"
 	}
-
-	err = a.migrate.Copy(mopts, cbOpts)
+	copyIndexes, _ := cmd.Flags().GetBool(common.CopyIndexes)
+	err = a.migrate.Copy(mopts, cbOpts, copyIndexes)
 	if err != nil {
 		zap.S().Fatal(err)
 	}

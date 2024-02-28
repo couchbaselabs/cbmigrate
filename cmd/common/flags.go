@@ -16,6 +16,8 @@ const (
 	CBBucket             = "cb-bucket"
 	CBScope              = "cb-scope"
 	CBCollection         = "cb-collection"
+
+	CopyIndexes = "copy-indexes"
 )
 
 var cbCluster = &flag.StringFlag{
@@ -96,6 +98,12 @@ var cbCollection = &flag.StringFlag{
 	Usage: "The name of the collection where the data needs to be imported. If the collection does not exist, it will be created.",
 }
 
+var copyIndexes = &flag.BoolFlag{
+	Name:  CopyIndexes,
+	Usage: "Copy indexes for the collection",
+	Value: true,
+}
+
 func GetCBFlags() []flag.Flag {
 	flags := []flag.Flag{
 		cbCluster,
@@ -131,4 +139,10 @@ func GetCBFlags() []flag.Flag {
 		GetVerboseFlag(),
 	}
 	return flags
+}
+
+func GetCommonFlags() []flag.Flag {
+	return []flag.Flag{
+		copyIndexes,
+	}
 }

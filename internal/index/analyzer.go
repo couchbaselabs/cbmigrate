@@ -4,7 +4,6 @@ package index
 
 import (
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 	"strings"
 )
@@ -99,7 +98,7 @@ func collectKeys(expression bson.D, keysMap map[string]bool) {
 		key, value := expression[i].Key, expression[i].Value
 		if key == "$and" || key == "$or" {
 			switch exprs := value.(type) {
-			case primitive.A:
+			case bson.A:
 				for _, expr := range exprs {
 					collectKeys(expr.(bson.D), keysMap)
 				}

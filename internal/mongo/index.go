@@ -288,7 +288,7 @@ func processLogicalOperator(operator string, value interface{}, fieldPath IndexF
 	}
 
 	switch val := value.(type) {
-	case primitive.A:
+	case bson.A:
 		for _, expr := range val {
 			condition, err := processExpression(expr.(bson.D), fieldPath)
 			if err != nil {
@@ -424,7 +424,7 @@ func getCBType(val interface{}) (cbTypeString, error) {
 			return "", fmt.Errorf("type %s cannot be parsed to couchbase type", v)
 		}
 		return newCBString(pv), nil
-	case []primitive.A:
+	case bson.A:
 		var types []string
 		for _, iv := range v {
 			pv, err := getCBType(iv)

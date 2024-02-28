@@ -11,7 +11,7 @@ import (
 )
 
 type IMigrate[Options any] interface {
-	Copy(mOpts *Options, cbOpts *option.Options) error
+	Copy(mOpts *Options, cbOpts *option.Options, copyIndexes bool) error
 }
 
 type Migrate[T any, Options any] struct {
@@ -20,7 +20,7 @@ type Migrate[T any, Options any] struct {
 	Destination common.IDestination
 }
 
-func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options) error {
+func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIndexes bool) error {
 
 	err := m.Source.Init(mOpts)
 	if err != nil {
@@ -32,10 +32,13 @@ func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options) error 
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-
-	indexes, err := m.Source.GetIndexes(ctx)
-	if err != nil {
-		return err
+	defer cancel()
+	var indexes []T
+	if copyIndexes {
+		indexes, err = m.Source.GetIndexes(ctx)
+		if err != nil {
+			return err
+		}
 	}
 	m.Analyzer.Init(indexes)
 
@@ -50,7 +53,9 @@ func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options) error 
 	})
 	g.Go(func() error {
 		for data := range mChan {
-			m.Analyzer.AnalyzeData(data)
+			if copyIndexes {
+				m.Analyzer.AnalyzeData(data)
+			}
 			dErr = m.Destination.ProcessData(data)
 			if dErr != nil {
 				cancel()
@@ -71,13 +76,16 @@ func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options) error 
 		return err
 	}
 	zap.S().Info("data migration completed")
+
 	cbIndexes := m.Analyzer.GetCouchbaseQuery(cbOpts.Bucket, cbOpts.Scope, cbOpts.Collection)
-	zap.S().Info("index migration started")
-	err = m.Destination.CreateIndexes(cbIndexes)
-	if err != nil {
-		return err
+	if copyIndexes {
+		zap.S().Info("index migration started")
+		err = m.Destination.CreateIndexes(cbIndexes)
+		if err != nil {
+			return err
+		}
+		zap.S().Info("index migration completed")
 	}
-	zap.S().Info("index migration completed")
 	return err
 }
 

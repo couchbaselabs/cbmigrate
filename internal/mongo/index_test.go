@@ -161,12 +161,103 @@ var _ = Describe("mongo to couchbase index ", func() {
 				}
 				Expect(result).To(Equal(output))
 			})
-			//It("output data should match with the test data", func() {
-			//	input := "k2[].n1k1.n2k1[].n3k1.n4k1[].n5k1 ASC INCLUDE MISSING,.n5k2.n6k1.n7k1 DESC INCLUDE MISSING,.n5k3 ASC INCLUDE MISSING"
-			//	output := "DISTINCT ARRAY (DISTINCT ARRAY (DISTINCT ARRAY FLATTEN_KEYS(`l3Item`.`n5k1` ASC INCLUDE MISSING,`l3Item`.`n5k2`.`n6k1`.`n7k1` DESC INCLUDE MISSING,`l3Item`.`n5k3` ASC INCLUDE MISSING) FOR `l3Item` IN `l2Item`.`n3k1`.`n4k1` END) FOR `l2Item` IN `l1Item`.`n1k1`.`n2k1` END) FOR `l1Item` IN `k2` END"
-			//	result := mongo.GenerateCouchbaseArrayIndex(input)
-			//	Expect(result).To(Equal(output))
-			//})
+			It("generate partial filter expression with type array", func() {
+				partialFilter := bson.D{
+					{
+						Key: "a", Value: bson.D{
+							{
+								Key: "$type", Value: int32(1),
+							},
+						},
+					},
+					{
+						Key: "b", Value: bson.D{
+							{
+								Key: "$type", Value: bson.A{"string", "object", int32(4)},
+							},
+						},
+					},
+				}
+				fieldPath := mongo.IndexFieldPath{}
+				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
+				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
+				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
+
+				output := "WHERE (type(`a`) = \"number\" AND type(`b`) IN [\"string\",\"object\",\"array\"])"
+				result, err := mongo.ConvertMongoToCouchbase(partialFilter, fieldPath)
+				Expect(err).To(BeNil())
+				if result != output {
+					fmt.Println("\n" + result)
+					fmt.Println("\n" + output)
+				}
+				Expect(result).To(Equal(output))
+			})
+			It("generate partial filter expression with multiple level of conditions", func() {
+				partialFilter := bson.D{
+					{
+						Key: "k5", Value: bson.D{
+							{
+								Key: "$type", Value: int32(1),
+							},
+						},
+					},
+					{
+						Key: "k6", Value: 10,
+					},
+					{
+						Key: "$and",
+						Value: bson.A{
+							bson.D{
+								{
+									Key: "$or",
+									Value: bson.A{
+										bson.D{
+											{
+												Key: "k7", Value: bson.D{
+													{Key: "$gte", Value: 10}, {Key: "$exists", Value: true},
+												},
+											},
+											{
+												Key: "k8", Value: bson.D{
+													{Key: "$lte", Value: 100}, {Key: "$exists", Value: true},
+												},
+											},
+										},
+										bson.D{
+											{
+												Key: "k9", Value: bson.D{
+													{Key: "$gte", Value: 10}, {Key: "$exists", Value: true},
+												},
+											},
+											{
+												Key: "k10", Value: bson.D{
+													{Key: "$lte", Value: 100}, {Key: "$exists", Value: true},
+												},
+											},
+										},
+									},
+								},
+							},
+							bson.D{
+								{Key: "k11", Value: bson.D{{Key: "$gte", Value: 200}, {Key: "$exists", Value: true}}},
+							},
+						},
+					},
+				}
+				fieldPath := mongo.IndexFieldPath{}
+				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
+				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
+				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
+
+				output := "WHERE (type(`k5`) = \"number\" AND `k6` = 10 AND (((k7 >= 10 AND k7 IS NOT \"NULL\" AND k8 <= 100 AND k8 IS NOT \"NULL\") OR (k9 >= 10 AND k9 IS NOT \"NULL\" AND k10 <= 100 AND k10 IS NOT \"NULL\")) AND k11 >= 200 AND k11 IS NOT \"NULL\"))"
+				result, err := mongo.ConvertMongoToCouchbase(partialFilter, fieldPath)
+				Expect(err).To(BeNil())
+				if result != output {
+					fmt.Println("\n" + result)
+					fmt.Println("\n" + output)
+				}
+				Expect(result).To(Equal(output))
+			})
 		})
 	})
 
