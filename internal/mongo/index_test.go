@@ -241,7 +241,13 @@ var _ = Describe("mongo to couchbase index ", func() {
 								},
 							},
 							bson.D{
-								{Key: "_id", Value: bson.D{{Key: "$gte", Value: 200}, {Key: "$exists", Value: true}}},
+								{
+									Key: "_id", Value: bson.D{
+										{Key: "$gte", Value: 200},
+										{Key: "$exists", Value: true},
+										{Key: "$eq", Value: "one"},
+									},
+								},
 							},
 						},
 					},
@@ -251,7 +257,7 @@ var _ = Describe("mongo to couchbase index ", func() {
 				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
 				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
 				fieldPath["_id"] = common.MetaDataID
-				output := "WHERE (type(`k5`) = \"number\" AND `k6` = 10 AND (((`k7` >= 10 AND `k7` IS NOT NULL AND `k8` <= 100 AND `k8` IS NOT NULL) OR (`k9` >= 10 AND `k9` IS NOT NULL AND `k10` <= 100 AND `k10` IS NOT NULL)) AND meta().id >= \"200\" AND meta().id IS NOT NULL))"
+				output := "WHERE (type(`k5`) = \"number\" AND `k6` = 10 AND (((`k7` >= 10 AND `k7` IS NOT NULL AND `k8` <= 100 AND `k8` IS NOT NULL) OR (`k9` >= 10 AND `k9` IS NOT NULL AND `k10` <= 100 AND `k10` IS NOT NULL)) AND meta().id >= \"200\" AND meta().id IS NOT NULL AND meta().id = \"one\"))"
 				result, err := mongo.ConvertMongoToCouchbase(partialFilter, fieldPath)
 				Expect(err).To(BeNil())
 				if result != output {
