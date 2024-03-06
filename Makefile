@@ -12,10 +12,10 @@ build: clean
 	GOOS=windows GOARCH=amd64 go build -ldflags="-X 'main.Version=1.0.0'" -o builds/bin/windows_amd64/$(APP_NAME).exe
 	mkdir -p -m 777 builds/zip
 
-	(cd builds/bin/linux_amd64 && tar -czvf ../../../builds/zip/$(APP_NAME)_$(VERSION)_linux_amd64.tar.gz $(APP_NAME))
-	(cd builds/bin/linux_arm64 && tar -czvf ../../../builds/zip/$(APP_NAME)_$(VERSION)_linux_arm64.tar.gz $(APP_NAME))
-	(cd builds/bin/darwin_amd64 && tar -czvf ../../../builds/zip/$(APP_NAME)_$(VERSION)_darwin_amd64.tar.gz $(APP_NAME))
-	(cd builds/bin/darwin_arm64 && tar -czvf ../../../builds/zip/$(APP_NAME)_$(VERSION)_darwin_arm64.tar.gz $(APP_NAME))
+	zip -j builds/zip/$(APP_NAME)_$(VERSION)_linux_amd64.zip builds/bin/linux_amd64/$(APP_NAME)
+	zip -j builds/zip/$(APP_NAME)_$(VERSION)_linux_arm64.zip builds/bin/linux_arm64/$(APP_NAME)
+	zip -j builds/zip/$(APP_NAME)_$(VERSION)_darwin_amd64.zip builds/bin/darwin_amd64/$(APP_NAME)
+	zip -j builds/zip/$(APP_NAME)_$(VERSION)_darwin_arm64.zip builds/bin/darwin_arm64/$(APP_NAME)
 	zip -j builds/zip/$(APP_NAME)_$(VERSION)_windows_amd64.zip builds/bin/windows_amd64/$(APP_NAME).exe
 
 clean:

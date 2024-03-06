@@ -12,8 +12,8 @@ package mock_test
 import (
 	reflect "reflect"
 
+	common "github.com/couchbaselabs/cbmigrate/internal/common"
 	option "github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
-	index "github.com/couchbaselabs/cbmigrate/internal/index"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -55,7 +55,7 @@ func (mr *MockIDestinationMockRecorder) Complete() *gomock.Call {
 }
 
 // CreateIndexes mocks base method.
-func (m *MockIDestination) CreateIndexes(indexes []index.Index) error {
+func (m *MockIDestination) CreateIndexes(indexes []common.Index) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateIndexes", indexes)
 	ret0, _ := ret[0].(error)
@@ -69,11 +69,12 @@ func (mr *MockIDestinationMockRecorder) CreateIndexes(indexes any) *gomock.Call 
 }
 
 // Init mocks base method.
-func (m *MockIDestination) Init(opts *option.Options) error {
+func (m *MockIDestination) Init(opts *option.Options) (*common.DocumentKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Init", opts)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*common.DocumentKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Init indicates an expected call of Init.

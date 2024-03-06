@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/couchbaselabs/cbmigrate/internal/common"
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
-	"github.com/couchbaselabs/cbmigrate/internal/index"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -16,7 +15,7 @@ type IMigrate[Options any] interface {
 
 type Migrate[T any, Options any] struct {
 	Source      common.ISource[T, Options]
-	Analyzer    index.Analyzer[T]
+	Analyzer    common.Analyzer[T]
 	Destination common.IDestination
 }
 
@@ -26,7 +25,7 @@ func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIn
 	if err != nil {
 		return err
 	}
-	err = m.Destination.Init(cbOpts)
+	dk, err := m.Destination.Init(cbOpts)
 	if err != nil {
 		return err
 	}
@@ -40,7 +39,7 @@ func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIn
 			return err
 		}
 	}
-	m.Analyzer.Init(indexes)
+	m.Analyzer.Init(indexes, dk)
 
 	zap.S().Info("data migration started")
 	var mChan = make(chan map[string]interface{}, 10000)
@@ -89,7 +88,7 @@ func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIn
 	return err
 }
 
-func NewMigrator[T any, Options any](source common.ISource[T, Options], destination common.IDestination, analyzer index.Analyzer[T]) IMigrate[Options] {
+func NewMigrator[T any, Options any](source common.ISource[T, Options], destination common.IDestination, analyzer common.Analyzer[T]) IMigrate[Options] {
 	return Migrate[T, Options]{
 		Source:      source,
 		Destination: destination,

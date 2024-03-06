@@ -1,30 +1,31 @@
-package index
+package common
 
 //go:generate mockgen -source=analyzer.go -destination=../../testhelper/mock/index.go -package=mock_test Analyzer
 
 import (
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 	"strings"
 )
 
 type Analyzer[T any] interface {
-	Init(index []T)
+	Init(index []T, suk *DocumentKey)
 	AnalyzeData(data map[string]interface{})
 	GetCouchbaseQuery(bucket, scope, collection string) []Index
 	//GetKeyPathWithArrayNotation(field string) string
 }
 
-// isArray checks if the provided value is an array or a slice.
-func isArray(value interface{}) bool {
-	typeOf := reflect.TypeOf(value)
-	if typeOf == nil {
-		return false
+func isArray(val interface{}) bool {
+	switch val.(type) {
+	case []interface{}, primitive.A:
+		return true
 	}
-	kind := reflect.TypeOf(value).Kind()
-	return kind == reflect.Slice || kind == reflect.Array
+	return false
 }
 
+// checkPath is written based mongodb unmarshalling so casting data to []interface{} will not work, so primitive.A is used
+// If this function is used for any other database other than mongo modification is needed in isArray function.
 // checkPath recursively checks if the path exists in the given data and builds the path string.
 func checkPath(data interface{}, elements []string, index int, path *strings.Builder) bool {
 	if index >= len(elements) {

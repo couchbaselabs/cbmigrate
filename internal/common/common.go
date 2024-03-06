@@ -1,9 +1,49 @@
 package common
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"reflect"
 	"sort"
 )
+
+type DocumentKind string
+
+const (
+	DkString DocumentKind = "string"
+	DkUuid   DocumentKind = "UUID"
+	DkField  DocumentKind = "field"
+)
+
+const MetaDataID = "meta().id"
+
+type DocumentKey struct {
+	key          string
+	NotComposite bool
+	UUIDSet      bool
+	HasString    bool
+}
+
+func (d *DocumentKey) Set(kind DocumentKind, value string) {
+	switch {
+	case kind == "UUID":
+		d.UUIDSet = true
+	case kind == "string":
+		d.HasString = true
+	case kind == "field":
+		if d.key == "" {
+			d.key = value
+		}
+		d.NotComposite = true
+	}
+}
+
+func (d *DocumentKey) Get() string {
+	if d.NotComposite && !d.UUIDSet && !d.HasString {
+		return d.key
+	}
+	return ""
+}
 
 // IsNilOrZero checks if the provided interface{} value is nil,
 // a nil pointer, a nil interface, or a zero value of any type.
@@ -39,4 +79,14 @@ func GetMapKeys(val map[string]interface{}) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+func GenerateShortUUIDHex() (string, error) {
+	randomBytes := make([]byte, 3) // 8 bytes for a shorter UUID
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		return "", err
+	}
+	shortUUIDHex := hex.EncodeToString(randomBytes)
+	return shortUUIDHex, nil
 }

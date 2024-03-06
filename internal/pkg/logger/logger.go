@@ -6,11 +6,12 @@ import (
 )
 
 var logger *zap.Logger
+var atomicLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
 
-func Init(logLevel zapcore.Level) {
+func Init() {
 	// Create a configuration for the logger.
 	config := zap.Config{
-		Level:            zap.NewAtomicLevelAt(logLevel),
+		Level:            atomicLevel,
 		Development:      false,
 		Encoding:         "console",
 		EncoderConfig:    zap.NewProductionEncoderConfig(),
@@ -34,5 +35,5 @@ func Init(logLevel zapcore.Level) {
 }
 
 func EnableDebugLevel() {
-	Init(zapcore.DebugLevel)
+	atomicLevel.SetLevel(zap.DebugLevel)
 }

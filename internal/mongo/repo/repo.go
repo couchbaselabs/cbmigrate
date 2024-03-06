@@ -5,6 +5,7 @@ package repo
 import (
 	"context"
 	mongodb "github.com/couchbaselabs/cbmigrate/internal/db/mongo"
+	"github.com/couchbaselabs/cbmigrate/internal/errors"
 	"github.com/couchbaselabs/cbmigrate/internal/mongo/option"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,14 +26,14 @@ type ICursor interface {
 }
 
 type Indexes struct {
-	Name                    string      `json:"name"`
-	TwoDSphereIndexVersion  interface{} `json:"2dsphereIndexVersion"`
-	Key                     bson.D      `json:"key"`
-	PartialFilterExpression bson.D      `json:"partialFilterExpression"`
-	Sparse                  bool        `json:"sparse"`
-	Weights                 interface{} `json:"weights"`
-	Collation               interface{} `json:"collation"`
-	ExpireAfterSeconds      interface{} `json:"expireAfterSeconds"`
+	Name                    string      `bson:"name"`
+	TwoDSphereIndexVersion  interface{} `bson:"2dsphereIndexVersion"`
+	Key                     bson.D      `bson:"key"`
+	PartialFilterExpression bson.D      `bson:"partialFilterExpression"`
+	Sparse                  bool        `bson:"sparse"`
+	Weights                 interface{} `bson:"weights"`
+	Collation               interface{} `bson:"collation"`
+	ExpireAfterSeconds      interface{} `bson:"expireAfterSeconds"`
 }
 
 func (i *Indexes) GetName() string {
@@ -66,11 +67,16 @@ func (i *Indexes) IsCustomCollationEnabled() bool {
 	return i.Collation != nil
 }
 
-func (i *Indexes) NotSupported() bool {
-	if i.IsText() || i.IsGeoSpatial() || i.IsTTL() || i.IsCustomCollationEnabled() {
-		return true
+func (i *Indexes) NotSupported() error {
+	switch {
+	case i.IsText():
+		return errors.NewMongoNotSupportedError("text index not supported")
+	case i.IsGeoSpatial():
+		return errors.NewMongoNotSupportedError("geo spatial index not supported")
+	case i.IsCustomCollationEnabled():
+		return errors.NewMongoNotSupportedError("index with collation settings not supported")
 	}
-	return false
+	return nil
 }
 
 type Repo struct {

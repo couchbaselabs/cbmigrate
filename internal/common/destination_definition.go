@@ -4,12 +4,11 @@ package common
 
 import (
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
-	"github.com/couchbaselabs/cbmigrate/internal/index"
 )
 
 type IDestination interface {
-	Init(opts *option.Options) error
+	Init(opts *option.Options) (*DocumentKey, error)
 	ProcessData(map[string]interface{}) error
 	Complete() error
-	CreateIndexes(indexes []index.Index) error
+	CreateIndexes(indexes []Index) error
 }

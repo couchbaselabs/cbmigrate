@@ -12,7 +12,7 @@ package mock_test
 import (
 	reflect "reflect"
 
-	index "github.com/couchbaselabs/cbmigrate/internal/index"
+	common "github.com/couchbaselabs/cbmigrate/internal/common"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -52,10 +52,10 @@ func (mr *MockAnalyzerMockRecorder[T]) AnalyzeData(data any) *gomock.Call {
 }
 
 // GetCouchbaseQuery mocks base method.
-func (m *MockAnalyzer[T]) GetCouchbaseQuery(bucket, scope, collection string) []index.Index {
+func (m *MockAnalyzer[T]) GetCouchbaseQuery(bucket, scope, collection string) []common.Index {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCouchbaseQuery", bucket, scope, collection)
-	ret0, _ := ret[0].([]index.Index)
+	ret0, _ := ret[0].([]common.Index)
 	return ret0
 }
 
@@ -66,13 +66,13 @@ func (mr *MockAnalyzerMockRecorder[T]) GetCouchbaseQuery(bucket, scope, collecti
 }
 
 // Init mocks base method.
-func (m *MockAnalyzer[T]) Init(index []T) {
+func (m *MockAnalyzer[T]) Init(index []T, suk *common.DocumentKey) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Init", index)
+	m.ctrl.Call(m, "Init", index, suk)
 }
 
 // Init indicates an expected call of Init.
-func (mr *MockAnalyzerMockRecorder[T]) Init(index any) *gomock.Call {
+func (mr *MockAnalyzerMockRecorder[T]) Init(index, suk any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockAnalyzer[T])(nil).Init), index)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockAnalyzer[T])(nil).Init), index, suk)
 }

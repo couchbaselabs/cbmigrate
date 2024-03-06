@@ -1,11 +1,11 @@
 package couchbase
 
 import (
+	"errors"
 	"fmt"
 	"github.com/couchbase/gocb/v2"
 	"github.com/couchbaselabs/cbmigrate/internal/common"
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase/repo"
-	"github.com/couchbaselabs/cbmigrate/internal/index"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/zap"
@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
+	cliErrors "github.com/couchbaselabs/cbmigrate/internal/errors"
 )
 
 func interfaceToString(value interface{}) string {
@@ -56,13 +57,13 @@ type Couchbase struct {
 	collection     string
 	batchSize      int
 	batchDocs      []gocb.BulkOp
-	key            []docKey
+	key            []DocKey
 	processedCount int
 }
 
-type docKey struct {
-	value string
-	kind  string // string  | field | UUID
+type DocKey struct {
+	Value string
+	Kind  common.DocumentKind // string | field | UUID
 }
 
 func NewCouchbase(db repo.IRepo) common.IDestination {
@@ -71,36 +72,44 @@ func NewCouchbase(db repo.IRepo) common.IDestination {
 	}
 }
 
-func (c *Couchbase) Init(cbOpts *option.Options) error {
+func (c *Couchbase) Init(cbOpts *option.Options) (*common.DocumentKey, error) {
 	c.bucket = cbOpts.Bucket
 	c.scope = cbOpts.Scope
 	c.collection = cbOpts.Collection
 	c.batchSize = cbOpts.BatchSize
+	// the check (only one key is used as a primary key) is needed to for index migration to use meta().ID instead of
+	// key while creating the index, and also that key can be ignored in while inserting the doc into couchbase
+	dk := &common.DocumentKey{}
 	if gk := cbOpts.GeneratedKey; gk != "" {
 		splitGK := strings.Split(gk, "::")
-
 		for _, k := range splitGK {
 			length := len(k)
+			var docKey DocKey
 			switch {
 			case length > 1 && k[0] == '%' && k[length-1] == '%':
-				c.key = append(c.key, docKey{kind: "field", value: k[1 : length-1]})
+				docKey.Kind = common.DkField
+				docKey.Value = k[1 : length-1]
 			case length > 1 && k[0] == '#' && k[length-1] == '#':
 				switch k[1 : length-1] {
-				case "UUID":
-					c.key = append(c.key, docKey{kind: "UUID", value: k})
+				case string(common.DkUuid):
+					docKey.Kind = common.DkUuid
+					docKey.Value = k[1 : length-1]
 				default:
-					return fmt.Errorf("custom generator %s is not supported", k[1:length-1])
+					return nil, fmt.Errorf("custom generator %s is not supported", k[1:length-1])
 				}
 			default:
-				c.key = append(c.key, docKey{kind: "string", value: k})
+				docKey.Kind = common.DkString
+				docKey.Value = k
 			}
+			c.key = append(c.key, docKey)
+			dk.Set(docKey.Kind, docKey.Value)
 		}
 	}
 	err := c.db.Init(cbOpts.Cluster, cbOpts)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return c.createScopeAndCollectionIFNotExits()
+	return dk, c.createScopeAndCollectionIFNotExits()
 }
 
 func (c *Couchbase) createScopeAndCollectionIFNotExits() error {
@@ -116,7 +125,7 @@ l1:
 		if scope.Name == c.scope {
 			foundScope = true
 		} else {
-			// only check collection if scope is found
+			// only check a collection if scope is found
 			continue
 		}
 
@@ -145,16 +154,19 @@ l1:
 func (c *Couchbase) ProcessData(data map[string]interface{}) error {
 	var id strings.Builder
 	for _, k := range c.key {
-		switch k.kind {
-		case "string":
-			id.WriteString(k.value)
-		case "field":
-			if val, ok := data[k.value]; ok {
+		switch k.Kind {
+		case common.DkString:
+			id.WriteString(k.Value)
+		case common.DkField:
+			if val, ok := data[k.Value]; ok {
 				id.WriteString(interfaceToString(val))
 			}
-		case "UUID":
+		case common.DkUuid:
 			id.WriteString(getUUID())
 		}
+	}
+	if len(c.key) == 1 && c.key[0].Kind == common.DkField {
+		delete(data, c.key[0].Value)
 	}
 	c.batchDocs = append(c.batchDocs, &gocb.UpsertOp{
 		ID:    id.String(),
@@ -198,16 +210,21 @@ func (c *Couchbase) UpsertData() error {
 	return nil
 }
 
-func (c *Couchbase) CreateIndexes(indexes []index.Index) error {
-
+func (c *Couchbase) CreateIndexes(indexes []common.Index) error {
 	for _, index := range indexes {
 		if index.Error != nil {
-			zap.S().Errorf("error %#v occured while creating index query %s", index.Error, index.Name)
+			var err cliErrors.NotSupportedError
+			if errors.As(index.Error, &err) {
+				zap.S().Warnf("error %s occurred while creating index query %s", index.Error.Error(), index.Name)
+			} else {
+				zap.S().Errorf("error %s occurred while creating index query %s", index.Error.Error(), index.Name)
+			}
 			continue
 		}
 		err := c.db.CreateIndex(index.Query)
 		if err != nil {
-			zap.S().Errorf("error %#v occured while creating index %s", err, index.Name)
+			zap.S().Errorf("error %#v occured while creating index %s", err.Error(), index.Name)
+			continue
 		}
 		zap.S().Debugf("index %s created successfully", index.Name)
 	}

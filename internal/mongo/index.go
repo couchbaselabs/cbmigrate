@@ -3,6 +3,7 @@ package mongo
 import (
 	"errors"
 	"fmt"
+	"github.com/couchbaselabs/cbmigrate/internal/common"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
@@ -23,7 +24,7 @@ type Index struct {
 	PartialExpression bson.D
 	Unique            bool
 	Sparse            bool
-	NotSupported      bool
+	Error             error
 }
 type Key struct {
 	Field string
@@ -31,6 +32,7 @@ type Key struct {
 }
 
 type cbTypeString string
+type nullTypeString string
 
 func newCBString(val string) cbTypeString {
 	return cbTypeString(fmt.Sprintf("%#v", val))
@@ -54,13 +56,13 @@ func (i IndexFieldPath) Get(key string) string {
 func CreateIndexQuery(bucket, scope, collection string, index Index, fieldPath IndexFieldPath) (string, error) {
 	var arrFields []Key
 	isArrayFieldAtFistPos := false
-	for i, key := range index.Keys {
-		key.Field = fieldPath.Get(key.Field)
-		if strings.Index(key.Field, "[]") > 0 {
+	for i := range index.Keys {
+		index.Keys[i].Field = fieldPath.Get(index.Keys[i].Field)
+		if strings.Index(index.Keys[i].Field, "[]") > 0 {
 			if i == 0 {
 				isArrayFieldAtFistPos = true
 			}
-			arrFields = append(arrFields, key)
+			arrFields = append(arrFields, index.Keys[i])
 		}
 	}
 	arrayIndexExp, err := GroupAndCombine(arrFields, !index.Sparse && isArrayFieldAtFistPos)
@@ -77,7 +79,7 @@ func CreateIndexQuery(bucket, scope, collection string, index Index, fieldPath I
 		}
 		switch {
 		// I am grouping all the array notation fields into single flatten couchbase array index expression
-		case strings.Index(fieldPath.Get(key.Field), "[]") > 0:
+		case strings.Index(key.Field, "[]") > 0:
 			if arrIndex {
 				keyAttribs := ""
 				if len(arrFields) == 0 {
@@ -204,6 +206,9 @@ func buildExpression(parts []string, parent string, l int) string {
 }
 
 func formatFieldReference(field string) string {
+	if field == common.MetaDataID {
+		return field
+	}
 	return "`" + strings.ReplaceAll(field, ".", "`.`") + "`"
 }
 
@@ -320,11 +325,11 @@ func ProcessField(field string, value interface{}, fieldPath IndexFieldPath) (st
 		return convertOperator(field, v)
 	default:
 		if strings.Index(field, "[]") > -1 {
-			conditionSuffix := fmt.Sprintf("%s %s", "=", getValue(value))
+			conditionSuffix := fmt.Sprintf("%s %s", "=", getValue(value, field))
 			return GenerateArrayFilterExpression(field, false, conditionSuffix), nil
 		}
 		// Handle direct equality as a special case
-		return fmt.Sprintf("%s = %s", formatFieldReference(field), getValue(value)), nil
+		return fmt.Sprintf("%s = %s", formatFieldReference(field), getValue(value, field)), nil
 	}
 }
 
@@ -356,7 +361,7 @@ func convertOperator(field string, operators bson.D) (string, error) {
 			if ok && !v {
 				couchbaseOp = "IS"
 			}
-			val = "NULL"
+			val = nullTypeString("NULL")
 		case "$type":
 			couchbaseOp = "="
 			t, err := getCBType(val)
@@ -375,21 +380,24 @@ func convertOperator(field string, operators bson.D) (string, error) {
 		}
 		condition := ""
 		if strings.Index(field, "[]") > -1 {
-			conditionSuffix := fmt.Sprintf("%s %s", couchbaseOp, getValue(val))
+			conditionSuffix := fmt.Sprintf("%s %s", couchbaseOp, getValue(val, field))
 			condition = GenerateArrayFilterExpression(field, isTypeOperand, conditionSuffix)
 
 		} else {
+			var formattedField string
 			if isTypeOperand {
-				field = "type(" + formatFieldReference(field) + ")"
+				formattedField = "type(" + formatFieldReference(field) + ")"
+			} else {
+				formattedField = formatFieldReference(field)
 			}
-			condition = fmt.Sprintf("%s %s %s", field, couchbaseOp, getValue(val))
+			condition = fmt.Sprintf("%s %s %s", formattedField, couchbaseOp, getValue(val, field))
 		}
 		conditions = append(conditions, condition)
 	}
 	return strings.Join(conditions, " AND "), nil
 }
 
-func getValue(val interface{}) string {
+func getValue(val interface{}, field string) string {
 	switch v := val.(type) {
 	case primitive.ObjectID:
 		return fmt.Sprintf("%#v", v.Hex())
@@ -401,23 +409,26 @@ func getValue(val interface{}) string {
 	case primitive.A:
 		var values []string
 		for i := range v {
-			values = append(values, getValue(v[i]))
+			values = append(values, getValue(v[i], field))
 		}
 		return "[" + strings.Join(values, ",") + "]"
 	case cbTypeString:
 		return string(v)
+	case nullTypeString:
+		return string(v)
 	}
-	return fmt.Sprintf("%#v", val)
+	value := fmt.Sprintf("%#v", val)
+	if field == common.MetaDataID {
+		// as id of couchbase is always string, all non-string values are converted to string
+		if _, ok := val.(string); !ok {
+			value = "\"" + value + "\""
+		}
+	}
+	return value
 }
 
 func getCBType(val interface{}) (cbTypeString, error) {
 	switch v := val.(type) {
-	case int32:
-		pv, ok := mongoCBPartialAlias[strconv.Itoa(int(v))]
-		if !ok {
-			return "", fmt.Errorf("type %d cannot be parsed to couchbase type", v)
-		}
-		return newCBString(pv), nil
 	case string:
 		pv, ok := mongoCBPartialAlias[v]
 		if !ok {
@@ -434,6 +445,13 @@ func getCBType(val interface{}) (cbTypeString, error) {
 			types = append(types, string(pv))
 		}
 		return cbTypeString("[" + strings.Join(types, ",") + "]"), nil
+	default: // default is number
+		nValue := fmt.Sprintf("%v", val)
+		pv, ok := mongoCBPartialAlias[nValue]
+		if !ok {
+			return "", fmt.Errorf("type %#v cannot be parsed to couchbase type", nValue)
+		}
+		return newCBString(pv), nil
 	}
 	return "", fmt.Errorf("invalid type %#v", reflect.TypeOf(val).String())
 }

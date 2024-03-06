@@ -2,12 +2,13 @@ package mongo
 
 import (
 	"fmt"
-	"github.com/couchbaselabs/cbmigrate/internal/index"
+	"github.com/couchbaselabs/cbmigrate/internal/common"
 )
 
 type IndexFieldAnalyzer struct {
 	indexes []Index
 	keys    map[string]*key
+	dk      *common.DocumentKey
 }
 
 type occurrence int
@@ -17,24 +18,25 @@ type key struct {
 	occurrence int
 }
 
-func NewIndexFieldAnalyzer() index.Analyzer[Index] {
+func NewIndexFieldAnalyzer() common.Analyzer[Index] {
 	return &IndexFieldAnalyzer{
 		keys: make(map[string]*key),
 	}
 }
 
-func (a *IndexFieldAnalyzer) Init(indexes []Index) {
+func (a *IndexFieldAnalyzer) Init(indexes []Index, dk *common.DocumentKey) {
 	a.indexes = indexes
 	for _, i := range indexes {
 		for _, key := range i.Keys {
 			a.keys[key.Field] = nil
 		}
 		if i.PartialExpression != nil {
-			for _, key := range index.ExtractKeys(i.PartialExpression) {
+			for _, key := range common.ExtractKeys(i.PartialExpression) {
 				a.keys[key] = nil
 			}
 		}
 	}
+	a.dk = dk
 }
 
 func (a *IndexFieldAnalyzer) AnalyzeData(data map[string]interface{}) {
@@ -42,7 +44,7 @@ func (a *IndexFieldAnalyzer) AnalyzeData(data map[string]interface{}) {
 		if a.keys[k] != nil && a.keys[k].occurrence > 100 {
 			continue
 		}
-		path, found := index.NavigatePath(k, data)
+		path, found := common.NavigatePath(k, data)
 		if found {
 			if a.keys[k] == nil {
 				a.keys[k] = &key{
@@ -75,25 +77,45 @@ func (a *IndexFieldAnalyzer) GetIndexFieldPath() IndexFieldPath {
 		}
 		indexKeyAlias[field] = f
 	}
+	if k := a.dk.Get(); k != "" {
+		indexKeyAlias[k] = common.MetaDataID
+	}
 	return indexKeyAlias
 }
 
-func (a *IndexFieldAnalyzer) GetCouchbaseQuery(bucket, scope, collection string) []index.Index {
+func (a *IndexFieldAnalyzer) GetCouchbaseQuery(bucket, scope, collection string) []common.Index {
 	fieldPath := a.GetIndexFieldPath()
-	var indexes []index.Index
+	var indexes []common.Index
+	isPrimaryIndexPresent := false
 	for _, mindex := range a.indexes {
-		cindex := index.Index{
+		cindex := common.Index{
 			Name: mindex.Name,
 		}
 		switch {
-		case mindex.NotSupported:
-			cindex.Error = fmt.Errorf("%s index not supported", mindex.Name)
+		case mindex.Error != nil:
+			cindex.Error = mindex.Error
+		case len(mindex.Keys) == 1 && a.dk.Get() == mindex.Keys[0].Field:
+			cindex.Query = fmt.Sprintf(
+				"CREATE PRIMARY INDEX `%s` on `%s`.`%s`.`%s` USING GSI WITH {\"defer_build\":true}",
+				mindex.Name, bucket, scope, collection)
+			isPrimaryIndexPresent = true
 		default:
 			query, err := CreateIndexQuery(bucket, scope, collection, mindex, fieldPath)
 			cindex.Query = query
 			cindex.Error = err
 		}
 		indexes = append(indexes, cindex)
+	}
+	if !isPrimaryIndexPresent {
+		uuid, _ := common.GenerateShortUUIDHex()
+		key := "primary-" + uuid
+		index := common.Index{
+			Name: key,
+			Query: fmt.Sprintf(
+				"CREATE PRIMARY INDEX `%s` on `%s`.`%s`.`%s` USING GSI WITH {\"defer_build\":true}",
+				key, bucket, scope, collection),
+		}
+		indexes = append(indexes, index)
 	}
 	return indexes
 }

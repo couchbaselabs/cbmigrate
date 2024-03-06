@@ -2,11 +2,14 @@ package mongo
 
 import (
 	"context"
+	"fmt"
 	"github.com/couchbaselabs/cbmigrate/internal/common"
+	"github.com/couchbaselabs/cbmigrate/internal/errors"
 	"github.com/couchbaselabs/cbmigrate/internal/mongo/option"
 	"github.com/couchbaselabs/cbmigrate/internal/mongo/repo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"strconv"
 )
 
 type Mongo struct {
@@ -56,7 +59,9 @@ func (m *Mongo) GetIndexes(ctx context.Context) ([]Index, error) {
 		index := Index{
 			Name: record.GetName(),
 		}
-		if record.NotSupported() {
+		if ierr := record.NotSupported(); ierr != nil {
+			index.Error = ierr
+			indexes = append(indexes, index)
 			continue
 		}
 		if record.IsSparse() {
@@ -65,9 +70,9 @@ func (m *Mongo) GetIndexes(ctx context.Context) ([]Index, error) {
 		// adaptive index wild card index need support
 
 		for _, k := range record.GetKey() {
-			v, ok := k.Value.(int32)
-			if !ok {
-				index.NotSupported = true
+			v, err := strconv.Atoi(fmt.Sprintf("%v", k.Value))
+			if err != nil {
+				index.Error = errors.NewMongoNotSupportedError(fmt.Sprintf("error occured while getting order value %#v", err))
 				break
 			}
 			index.Keys = append(index.Keys, Key{
