@@ -228,5 +228,16 @@ func (c *Couchbase) CreateIndexes(indexes []common.Index) error {
 		}
 		zap.S().Debugf("index %s created successfully", index.Name)
 	}
+
+	keyspace := fmt.Sprintf("`%s`.`%s`.`%s`", c.bucket, c.scope, c.collection)
+	// build differed index
+	query := fmt.Sprintf("BUILD INDEX ON %s((SELECT RAW name FROM system:indexes  WHERE "+
+		"keyspace_id = '%s' AND scope_id = '%s' AND bucket_id = '%s' AND state = 'deferred' ));",
+		keyspace, c.collection, c.scope, c.bucket)
+	err := c.db.CreateIndex(query)
+	if err != nil {
+		zap.S().Errorf("error %#v occured while building indexes", err.Error())
+	}
+	zap.L().Debug("Indexes deferred are now building in background")
 	return nil
 }
