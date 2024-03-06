@@ -77,8 +77,8 @@ func (c *Couchbase) Init(cbOpts *option.Options) (*common.DocumentKey, error) {
 	c.scope = cbOpts.Scope
 	c.collection = cbOpts.Collection
 	c.batchSize = cbOpts.BatchSize
-	// the check (only one key is used as a primary key) is needed to for index migration to use meta().ID instead of
-	// key while creating the index, and also that key can be ignored in while inserting the doc into couchbase
+	// The check (only one key is used as a primary key) is needed to for index migration to use meta().ID instead of
+	// key while creating the index. Also, that key can be ignored in while inserting the doc into couchbase
 	dk := &common.DocumentKey{}
 	if gk := cbOpts.GeneratedKey; gk != "" {
 		splitGK := strings.Split(gk, "::")
@@ -153,7 +153,8 @@ l1:
 
 func (c *Couchbase) ProcessData(data map[string]interface{}) error {
 	var id strings.Builder
-	for _, k := range c.key {
+	kLen := len(c.key)
+	for i, k := range c.key {
 		switch k.Kind {
 		case common.DkString:
 			id.WriteString(k.Value)
@@ -163,6 +164,9 @@ func (c *Couchbase) ProcessData(data map[string]interface{}) error {
 			}
 		case common.DkUuid:
 			id.WriteString(getUUID())
+		}
+		if i < kLen-1 {
+			id.WriteString("::")
 		}
 	}
 	if len(c.key) == 1 && c.key[0].Kind == common.DkField {
