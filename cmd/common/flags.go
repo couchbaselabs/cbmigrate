@@ -16,8 +16,10 @@ const (
 	CBBucket             = "cb-bucket"
 	CBScope              = "cb-scope"
 	CBCollection         = "cb-collection"
+	CBBatchSize          = "cb-batch-size"
 
 	CopyIndexes = "copy-indexes"
+	BufferSize  = "buffer-size"
 )
 
 var cbCluster = &flag.StringFlag{
@@ -98,10 +100,22 @@ var cbCollection = &flag.StringFlag{
 	Usage: "The name of the collection where the data needs to be imported. If the collection does not exist, it will be created.",
 }
 
+var batchSize = &flag.Int64Flag{
+	Name:  CBBatchSize,
+	Usage: "Batch size",
+	Value: 200,
+}
+
 var copyIndexes = &flag.BoolFlag{
 	Name:  CopyIndexes,
 	Usage: "Copy indexes for the collection",
 	Value: true,
+}
+
+var bufferSize = &flag.Int64Flag{
+	Name:  BufferSize,
+	Usage: "Buffer size",
+	Value: 10000,
 }
 
 func GetCBFlags() []flag.Flag {
@@ -136,6 +150,7 @@ func GetCBFlags() []flag.Flag {
 		cbBucket,
 		cbScope,
 		cbCollection,
+		batchSize,
 		GetVerboseFlag(),
 	}
 	return flags
@@ -144,5 +159,6 @@ func GetCBFlags() []flag.Flag {
 func GetCommonFlags() []flag.Flag {
 	return []flag.Flag{
 		copyIndexes,
+		bufferSize,
 	}
 }

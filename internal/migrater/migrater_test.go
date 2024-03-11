@@ -3,14 +3,15 @@ package migrater_test
 import (
 	"context"
 	"errors"
+	"github.com/couchbaselabs/cbmigrate/internal/common"
 	cOpts "github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
-	"github.com/couchbaselabs/cbmigrate/internal/index"
 	migrater2 "github.com/couchbaselabs/cbmigrate/internal/migrater"
 	"github.com/couchbaselabs/cbmigrate/internal/mongo"
 	mOpts "github.com/couchbaselabs/cbmigrate/internal/mongo/option"
 	mock_test "github.com/couchbaselabs/cbmigrate/testhelper/mock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.uber.org/mock/gomock"
 	"reflect"
 )
@@ -22,10 +23,14 @@ var index1 = mongo.Index{
 		{Field: "k2.n1k1", Order: 1},
 		{Field: "k3.n1k1", Order: 1},
 	},
-	PartialExpression: map[string]interface{}{
-		"k1.n1k1": "10",
-		"k2.n1k1": map[string]interface{}{
-			"$gte": 100,
+	PartialExpression: bson.D{
+		{
+			Key:   "k1.n1k1",
+			Value: "10",
+		},
+		{
+			Key:   "k2.n1k1",
+			Value: bson.D{{Key: "$gte", Value: 100}},
 		},
 	},
 }
@@ -36,10 +41,14 @@ var index2 = mongo.Index{
 		{Field: "k5.n1k1", Order: 1},
 		{Field: "k6.n1k1", Order: 1},
 	},
-	PartialExpression: map[string]interface{}{
-		"k4.n1k1": "10",
-		"k5.n1k1": map[string]interface{}{
-			"$gte": 100,
+	PartialExpression: bson.D{
+		{
+			Key:   "k4.n1k1",
+			Value: "10",
+		},
+		{
+			Key:   "k5.n1k1",
+			Value: bson.D{{Key: "$gte", Value: 100}},
 		},
 	},
 }
@@ -50,10 +59,14 @@ var index3 = mongo.Index{
 		{Field: "k8.n1k1", Order: 1},
 		{Field: "k9.n1k1", Order: 1},
 	},
-	PartialExpression: map[string]interface{}{
-		"k7.n1k1": "10",
-		"k8.n1k1": map[string]interface{}{
-			"$gte": 100,
+	PartialExpression: bson.D{
+		{
+			Key:   "k7.n1k1",
+			Value: "10",
+		},
+		{
+			Key:   "k8.n1k1",
+			Value: bson.D{{Key: "$gte", Value: 100}},
 		},
 	},
 }
@@ -63,7 +76,9 @@ var indexes = []mongo.Index{
 	index3,
 }
 
-var cIndexes = []index.Index{
+var dk = &common.DocumentKey{}
+
+var cIndexes = []common.Index{
 	{
 		Name:  "index1",
 		Query: "CREATE INDEX idx_airport_over1000\n  ON `travel-sample`.inventory.airport(geo.alt)\n  WHERE geo.alt > 1000",
@@ -71,6 +86,7 @@ var cIndexes = []index.Index{
 }
 
 var _ = Describe("migrate", func() {
+	dk.Set(common.DkField, "_id")
 	Describe("test data migration", func() {
 		var (
 			ctrl        *gomock.Controller
@@ -100,9 +116,9 @@ var _ = Describe("migrate", func() {
 		Context("success", func() {
 			It("data copied to destination", func() {
 				source.EXPECT().Init(MOpts).Return(nil)
-				destination.EXPECT().Init(CBOpts).Return(nil)
+				destination.EXPECT().Init(CBOpts).Return(dk, nil)
 				source.EXPECT().GetIndexes(gomock.Any()).Return(indexes, nil)
-				analyzer.EXPECT().Init(indexes).Return()
+				analyzer.EXPECT().Init(indexes, dk).Return()
 				source.EXPECT().StreamData(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, stream chan map[string]interface{}) error {
 					for _, d := range testData {
 						stream <- d
@@ -125,7 +141,7 @@ var _ = Describe("migrate", func() {
 				destination.EXPECT().Complete().Return(nil)
 				analyzer.EXPECT().GetCouchbaseQuery(CBOpts.Bucket, CBOpts.Scope, CBOpts.Collection).Return(cIndexes)
 				destination.EXPECT().CreateIndexes(cIndexes).Return(nil)
-				err := migrater.Copy(MOpts, CBOpts)
+				err := migrater.Copy(MOpts, CBOpts, true, 10000)
 				Expect(err).To(BeNil())
 			})
 		})
@@ -133,30 +149,30 @@ var _ = Describe("migrate", func() {
 			It("source connection initialization error", func() {
 				sourceError := errors.New("error occurred in source connection initialization")
 				source.EXPECT().Init(MOpts).Return(sourceError)
-				err := migrater.Copy(MOpts, CBOpts)
+				err := migrater.Copy(MOpts, CBOpts, false, 10000)
 				Expect(err).To(Equal(sourceError))
 			})
 			It("destination connection initialization error", func() {
 				destError := errors.New("error occurred in source connection initialization")
 				source.EXPECT().Init(MOpts).Return(nil)
-				destination.EXPECT().Init(CBOpts).Return(destError)
-				err := migrater.Copy(MOpts, CBOpts)
+				destination.EXPECT().Init(CBOpts).Return(nil, destError)
+				err := migrater.Copy(MOpts, CBOpts, false, 10000)
 				Expect(err).To(Equal(destError))
 			})
 			It("error occurred while getting the indexes", func() {
 				indexError := errors.New("error occurred while getting the indexes")
 				source.EXPECT().Init(MOpts).Return(nil)
-				destination.EXPECT().Init(CBOpts).Return(nil)
+				destination.EXPECT().Init(CBOpts).Return(dk, nil)
 				source.EXPECT().GetIndexes(gomock.Any()).Return(nil, indexError)
-				err := migrater.Copy(MOpts, CBOpts)
+				err := migrater.Copy(MOpts, CBOpts, true, 10000)
 				Expect(err).To(Equal(indexError))
 			})
 			It("error while streaming the data", func() {
 				streamError := errors.New("error occurred while streaming the data")
 				source.EXPECT().Init(MOpts).Return(nil)
-				destination.EXPECT().Init(CBOpts).Return(nil)
+				destination.EXPECT().Init(CBOpts).Return(dk, nil)
 				source.EXPECT().GetIndexes(gomock.Any()).Return(indexes, nil)
-				analyzer.EXPECT().Init(indexes).Return()
+				analyzer.EXPECT().Init(indexes, dk).Return()
 				source.EXPECT().StreamData(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, stream chan map[string]interface{}) error {
 					for _, d := range testData[0:2] {
 						stream <- d
@@ -177,7 +193,7 @@ var _ = Describe("migrate", func() {
 					return nil
 				})
 				destination.EXPECT().Complete().Return(nil)
-				err := migrater.Copy(MOpts, CBOpts)
+				err := migrater.Copy(MOpts, CBOpts, true, 10000)
 				Expect(err).To(Equal(errors.Join(streamError)))
 			})
 
@@ -185,9 +201,9 @@ var _ = Describe("migrate", func() {
 				dataProcessError := errors.New("error occurred while processing the data")
 				contextCancelledError := errors.New("context cancelled error")
 				source.EXPECT().Init(MOpts).Return(nil)
-				destination.EXPECT().Init(CBOpts).Return(nil)
+				destination.EXPECT().Init(CBOpts).Return(dk, nil)
 				source.EXPECT().GetIndexes(gomock.Any()).Return(indexes, nil)
-				analyzer.EXPECT().Init(indexes).Return()
+				analyzer.EXPECT().Init(indexes, dk).Return()
 				source.EXPECT().StreamData(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, stream chan map[string]interface{}) error {
 					defer GinkgoRecover()
 					for _, d := range testData {
@@ -212,7 +228,7 @@ var _ = Describe("migrate", func() {
 					i++
 					return nil
 				})
-				err := migrater.Copy(MOpts, CBOpts)
+				err := migrater.Copy(MOpts, CBOpts, true, 10000)
 				Expect(err.Error()).To(Equal(errors.Join(dataProcessError, contextCancelledError).Error()))
 			})
 		})

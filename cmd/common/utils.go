@@ -161,7 +161,7 @@ func ParesCouchbaseOptions(cmd *cobra.Command, collection string) (*option.Optio
 
 	cbopts.GeneratedKey, _ = cmd.Flags().GetString(CBGenerateKey)
 
-	cbopts.BatchSize = 250
+	cbopts.BatchSize, _ = cmd.Flags().GetInt(CBBatchSize)
 	return cbopts, nil
 }
 

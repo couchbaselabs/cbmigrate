@@ -10,7 +10,7 @@ import (
 )
 
 type IMigrate[Options any] interface {
-	Copy(mOpts *Options, cbOpts *option.Options, copyIndexes bool) error
+	Copy(mOpts *Options, cbOpts *option.Options, copyIndexes bool, bufferSize int) error
 }
 
 type Migrate[T any, Options any] struct {
@@ -19,7 +19,7 @@ type Migrate[T any, Options any] struct {
 	Destination common.IDestination
 }
 
-func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIndexes bool) error {
+func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIndexes bool, bufferSize int) error {
 
 	err := m.Source.Init(mOpts)
 	if err != nil {
@@ -42,7 +42,7 @@ func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIn
 	m.Analyzer.Init(indexes, dk)
 
 	zap.S().Info("data migration started")
-	var mChan = make(chan map[string]interface{}, 10000)
+	var mChan = make(chan map[string]interface{}, bufferSize)
 	g := errgroup.Group{}
 	var sErr, dErr error
 	g.Go(func() error {

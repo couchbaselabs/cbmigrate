@@ -66,7 +66,7 @@ func (opts *Options) NormalizeOptionsAndURI() error {
 	if err != nil {
 		return err
 	}
-	err = opts.setOptionsFromURI(cs)
+	err = opts.setOptionsFromURI(*cs)
 	if err != nil {
 		return err
 	}
@@ -493,7 +493,7 @@ func NewURI(unparsed string) (*URI, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error parsing URI from %v: %v", unparsed, err)
 	}
-	return &URI{ConnectionString: cs.String(), ConnString: cs}, nil
+	return &URI{ConnectionString: cs.String(), ConnString: *cs}, nil
 }
 
 func (uri *URI) GetConnectionAddrs() []string {

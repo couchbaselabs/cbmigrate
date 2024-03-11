@@ -35,6 +35,8 @@ cbmigrate mongo --mongodb-uri MONGODB_URI --mongodb-collection MONGODB_COLLECTIO
   ```
 
 ## Flags:
+- `--buffer-size int`: Buffer size (default 10000).
+- `--cb-batch-size int`: Batch size (default 200).
 - `--cb-bucket string`: The name of the Couchbase bucket.
 - `--cb-cacert string`: Specifies a CA certificate that will be used to verify the identity of the server being connecting to. Either this flag or the --cb-no-ssl-verify flag must be specified when using an SSL encrypted connection.
 - `--cb-client-cert string`: The path to a client certificate used to authenticate when connecting to a cluster. Maybe supplied with --client-key as an alternative to the --cb-username and --cb-password flags.

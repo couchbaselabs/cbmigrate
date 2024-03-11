@@ -29,7 +29,7 @@ func Execute() {
 		&flag.BoolFlag{
 			Name:  Version,
 			Alias: "v",
-			Usage: "Display the version of this tool.",
+			Usage: "Displays the version of this tool.",
 		},
 	}
 	cmd := common.NewCommand("cbmigrate", nil, nil, "", "", flags)
