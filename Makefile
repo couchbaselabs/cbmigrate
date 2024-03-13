@@ -19,7 +19,6 @@ build: clean
 
 clean:
 	rm -rf builds/*
-
 test:
 	 go test ./... -coverprofile=coverage.out
 

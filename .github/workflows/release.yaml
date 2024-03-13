@@ -1,0 +1,67 @@
+name: Release
+
+env:
+  AWS_REGION : "us-east-2"
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  goreleaser:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.21.4'
+
+      - name: Install Code Signing Certificates
+        run: |
+          # Commands to install your code signing certificates
+          # Example:
+          echo "${{ secrets.APPLE_DEV_CERT }}" | base64 --decode > /tmp/certificate.p12
+          security create-keychain -p ${{ secrets.KEYCHAIN_PASSWORD }} build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p ${{ secrets.KEYCHAIN_PASSWORD }} build.keychain
+          security import /tmp/certificate.p12 -k build.keychain -P "${{ secrets.APPLE_DEV_CERT_PASSPHRASE }}" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k ${{ secrets.KEYCHAIN_PASSWORD }} build.keychain
+
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: ${{ secrets.AWS_OPEN_ID_ARN }}
+          role-session-name: github-open-id-connect
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: upload binaries to s3
+        run: |
+          make buildOnGit
+          aws s3 cp /tmp/cbmigrate/zip/* s3://${{ secrets.BUCKET_NAME }}/ --recursive
+
+      - name: Generate Changelog
+        run: |
+          go install github.com/git-chglog/git-chglog/cmd/git-chglog@v0.15.4
+          # Generate the changelog using git-chglog and store it in a temporary file
+          git-chglog -c ./.chglog/config-action.yml -o /tmp/changelog.md
+
+      - name: Run GoReleaser # it does the release and pushes the binary to s3 look into .goreleaser.yaml
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: release --release-notes="/tmp/changelog.md" --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_DEV_CERT_NAME: ${{ secrets.APPLE_DEV_CERT_NAME }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+          # Add environment variables if needed for code signing
