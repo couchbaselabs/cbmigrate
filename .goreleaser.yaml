@@ -13,8 +13,8 @@ builds:
         - cmd: go mod tidy
         - cmd: go mod verify
       post:
-        - cmd: ditto -c -k {{ .Path }} {{ .Path }}.zip
-        - cmd: aws s3 cp {{ .Path }}.zip s3://${{ .Env.BUCKET_NAME }}/
+        - cmd: ditto -c -k {{ .Path }} {{ .Path }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip
+        - cmd: aws s3 cp {{ .Path }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip s3://${{ .Env.BUCKET_NAME }}/
   - id: "mac"
     goos:
       - darwin
@@ -27,8 +27,8 @@ builds:
         - cmd: codesign --options runtime --timestamp --sign "{{ .Env.APPLE_DEV_CERT_NAME }}" {{ .Path }}
         - cmd: ditto -c -k --keepParent {{ .Path }} {{ .Path }}.zip
         - cmd: xcrun notarytool submit {{ .Path }}.zip --apple-id {{ .Env.APPLE_ID }} --password {{ .Env.APPLE_APP_PASSWORD }} --team-id {{ .Env.APPLE_TEAM_ID }}  --wait
-        - cmd: rm -rf {{ .Path }}.zip && ditto -c -k {{ .Path }} {{ .Path }}.zip
-        - cmd: aws s3 cp {{ .Path }}.zip s3://${{ .Env.BUCKET_NAME }}/
+        - cmd: rm -rf {{ .Path }}.zip && ditto -c -k {{ .Path }} {{ .Path }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip
+        - cmd: aws s3 cp {{ .Path }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip s3://${{ .Env.BUCKET_NAME }}/
 release:
   draft: false
 
