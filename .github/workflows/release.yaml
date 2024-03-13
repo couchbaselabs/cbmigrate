@@ -63,4 +63,5 @@ jobs:
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+          BUCKET_ACL: ${{ secrets.BUCKET_ACL }}
           # Add environment variables if needed for code signing
