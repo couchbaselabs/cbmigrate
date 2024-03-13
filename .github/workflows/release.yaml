@@ -45,11 +45,6 @@ jobs:
           role-session-name: github-open-id-connect
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: upload binaries to s3
-        run: |
-          make buildOnGit
-          aws s3 cp /tmp/cbmigrate/zip/* s3://${{ secrets.BUCKET_NAME }}/ --recursive
-
       - name: Generate Changelog
         run: |
           go install github.com/git-chglog/git-chglog/cmd/git-chglog@v0.15.4
