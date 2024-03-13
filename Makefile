@@ -3,13 +3,12 @@ setup:
 
 APP_NAME := cbmigrate
 VERSION := $(shell cat plugin.version)
-
 build: clean
-	GOOS=linux GOARCH=amd64 go build -ldflags="-X 'main.Version=1.0.0'" -o builds/bin/linux_amd64/$(APP_NAME)
-	GOOS=linux GOARCH=arm64 go build -ldflags="-X 'main.Version=1.0.0'" -o builds/bin/linux_arm64/$(APP_NAME)
-	GOOS=darwin GOARCH=amd64 go build -ldflags="-X 'main.Version=1.0.0'" -o builds/bin/darwin_amd64/$(APP_NAME)
-	GOOS=darwin GOARCH=arm64 go build -ldflags="-X 'main.Version=1.0.0'" -o builds/bin/darwin_arm64/$(APP_NAME)
-	GOOS=windows GOARCH=amd64 go build -ldflags="-X 'main.Version=1.0.0'" -o builds/bin/windows_amd64/$(APP_NAME).exe
+	GOOS=linux GOARCH=amd64 go build -ldflags="-X 'main.Version=$(VERSION)'" -o builds/bin/linux_amd64/$(APP_NAME)
+	GOOS=linux GOARCH=arm64 go build -ldflags="-X 'main.Version=$(VERSION)'" -o builds/bin/linux_arm64/$(APP_NAME)
+	GOOS=darwin GOARCH=amd64 go build -ldflags="-X 'main.Version=$(VERSION)'" -o builds/bin/darwin_amd64/$(APP_NAME)
+	GOOS=darwin GOARCH=arm64 go build -ldflags="-X 'main.Version=$(VERSION)'" -o builds/bin/darwin_arm64/$(APP_NAME)
+	GOOS=windows GOARCH=amd64 go build -ldflags="-X 'main.Version=$(VERSION)'" -o builds/bin/windows_amd64/$(APP_NAME).exe
 	mkdir -p -m 777 builds/zip
 
 	zip -j builds/zip/$(APP_NAME)_$(VERSION)_linux_amd64.zip builds/bin/linux_amd64/$(APP_NAME)
@@ -20,7 +19,6 @@ build: clean
 
 clean:
 	rm -rf builds/*
-
 test:
 	 go test ./... -coverprofile=coverage.out
 

@@ -15,12 +15,12 @@ import (
 )
 
 type Action struct {
-	migrate migrater.IMigrate[mOpts.Options]
+	Migrate migrater.IMigrate[mOpts.Options]
 }
 
 func NewAction() *Action {
 	return &Action{
-		migrate: migrater.NewMigrator(
+		Migrate: migrater.NewMigrator(
 			mongo.NewMongo(mRepo.NewRepo()),
 			couchbase.NewCouchbase(cRepo.NewRepo()),
 			mongo.NewIndexFieldAnalyzer(),
@@ -85,7 +85,7 @@ func (a *Action) RunE(cmd *cobra.Command, args []string) error {
 	}
 	copyIndexes, _ := cmd.Flags().GetBool(common.CopyIndexes)
 	bufferSize, _ := cmd.Flags().GetInt(common.BufferSize)
-	err = a.migrate.Copy(mopts, cbOpts, copyIndexes, bufferSize)
+	err = a.Migrate.Copy(mopts, cbOpts, copyIndexes, bufferSize)
 	if err != nil {
 		zap.S().Fatal(err)
 	}

@@ -52,6 +52,11 @@ func NewCommand(name string, alias []string, examples []Example, short string, l
 	for _, fi := range flags {
 		flagSet := cmd.Flags()
 		switch f := fi.(type) {
+		case *flag.IntFlag:
+			if f.IsPersistentFlag() {
+				flagSet = cmd.PersistentFlags()
+			}
+			flagSet.IntP(f.Name, f.Alias, f.Value, f.Usage)
 		case *flag.Int64Flag:
 			if f.IsPersistentFlag() {
 				flagSet = cmd.PersistentFlags()

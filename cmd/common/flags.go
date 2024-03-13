@@ -100,7 +100,7 @@ var cbCollection = &flag.StringFlag{
 	Usage: "The name of the collection where the data needs to be imported. If the collection does not exist, it will be created.",
 }
 
-var batchSize = &flag.Int64Flag{
+var batchSize = &flag.IntFlag{
 	Name:  CBBatchSize,
 	Usage: "Batch size",
 	Value: 200,
@@ -112,7 +112,7 @@ var copyIndexes = &flag.BoolFlag{
 	Value: true,
 }
 
-var bufferSize = &flag.Int64Flag{
+var bufferSize = &flag.IntFlag{
 	Name:  BufferSize,
 	Usage: "Buffer size",
 	Value: 10000,
