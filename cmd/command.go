@@ -37,7 +37,8 @@ func Execute() {
 	cmd.AddCommand(mongo.GetMongoMigrateCommand())
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed(Version) {
-			fmt.Println("Version: " + common.Version)
+			version, _ := cmd.Flags().GetString(Version)
+			fmt.Println("Version: " + version)
 			return nil
 		}
 		return cmd.Help()
