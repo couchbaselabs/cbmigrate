@@ -200,9 +200,9 @@ func buildExpression(parts []string, parent string, l int) string {
 	field := inner
 
 	if parent == "" {
-		return fmt.Sprintf("DISTINCT ARRAY %s FOR %s IN %s END", field, item, items)
+		return fmt.Sprintf("ALL ARRAY %s FOR %s IN %s END", field, item, items)
 	}
-	return fmt.Sprintf("(DISTINCT ARRAY %s FOR %s IN %s END)", field, item, items)
+	return fmt.Sprintf("(ALL ARRAY %s FOR %s IN %s END)", field, item, items)
 }
 
 func formatFieldReference(field string) string {
