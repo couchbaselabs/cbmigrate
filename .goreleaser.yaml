@@ -13,8 +13,8 @@ builds:
         - cmd: go mod tidy
         - cmd: go mod verify
       post:
-        - cmd: ditto -c -k {{ .Path }} {{ .Path }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip
-        - cmd: aws s3 cp {{ .Path }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip s3://{{ .Env.BUCKET_NAME }}/ --acl {{ .Env.BUCKET_ACL }}
+        - cmd: ditto -c -k {{ .Path }} {{ trimsuffix .Path ".exe" }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip
+        - cmd: aws s3 cp {{ trimsuffix .Path ".exe" }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip s3://{{ .Env.BUCKET_NAME }}/ --acl {{ .Env.BUCKET_ACL }}
   - id: "mac"
     goos:
       - darwin
@@ -28,8 +28,8 @@ builds:
         - cmd: ditto -c -k --keepParent {{ .Path }} {{ .Path }}.zip
         - cmd: xcrun notarytool submit {{ .Path }}.zip --apple-id {{ .Env.APPLE_ID }} --password {{ .Env.APPLE_APP_PASSWORD }} --team-id {{ .Env.APPLE_TEAM_ID }}  --wait
         - cmd: rm -rf {{ .Path }}.zip
-        - cmd: ditto -c -k {{ .Path }} {{ trimsuffix .Path ".exe" }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip
-        - cmd: aws s3 cp {{ trimsuffix .Path ".exe" }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip s3://{{ .Env.BUCKET_NAME }}/ --acl {{ .Env.BUCKET_ACL }}
+        - cmd: ditto -c -k {{ .Path }} {{ .Path }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip
+        - cmd: aws s3 cp {{ .Path }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip s3://{{ .Env.BUCKET_NAME }}/ --acl {{ .Env.BUCKET_ACL }}
 release:
   draft: false
 
