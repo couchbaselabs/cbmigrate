@@ -61,13 +61,13 @@ var _ = Describe("mongo to couchbase index ", func() {
 		Context("success", func() {
 			It("output data should match with the test data", func() {
 				input := "k2[].n1k1[].n2k1.n3k1 ASC INCLUDE MISSING,.n2k1.n3k2.n4k1 DESC,.n2k2 ASC"
-				output := "DISTINCT ARRAY (DISTINCT ARRAY FLATTEN_KEYS(`l2Item`.`n2k1`.`n3k1` ASC INCLUDE MISSING,`l2Item`.`n2k1`.`n3k2`.`n4k1` DESC,`l2Item`.`n2k2` ASC) FOR `l2Item` IN `l1Item`.`n1k1` END) FOR `l1Item` IN `k2` END"
+				output := "ALL ARRAY (ALL ARRAY FLATTEN_KEYS(`l2Item`.`n2k1`.`n3k1` ASC INCLUDE MISSING,`l2Item`.`n2k1`.`n3k2`.`n4k1` DESC,`l2Item`.`n2k2` ASC) FOR `l2Item` IN `l1Item`.`n1k1` END) FOR `l1Item` IN `k2` END"
 				result := mongo.GenerateCouchbaseArrayIndex(input)
 				Expect(result).To(Equal(output))
 			})
 			It("output data should match with the test data", func() {
 				input := "k2[].n1k1.n2k1[].n3k1.n4k1[].n5k1 ASC INCLUDE MISSING,.n5k2.n6k1.n7k1 DESC,.n5k3 ASC"
-				output := "DISTINCT ARRAY (DISTINCT ARRAY (DISTINCT ARRAY FLATTEN_KEYS(`l3Item`.`n5k1` ASC INCLUDE MISSING,`l3Item`.`n5k2`.`n6k1`.`n7k1` DESC,`l3Item`.`n5k3` ASC) FOR `l3Item` IN `l2Item`.`n3k1`.`n4k1` END) FOR `l2Item` IN `l1Item`.`n1k1`.`n2k1` END) FOR `l1Item` IN `k2` END"
+				output := "ALL ARRAY (ALL ARRAY (ALL ARRAY FLATTEN_KEYS(`l3Item`.`n5k1` ASC INCLUDE MISSING,`l3Item`.`n5k2`.`n6k1`.`n7k1` DESC,`l3Item`.`n5k3` ASC) FOR `l3Item` IN `l2Item`.`n3k1`.`n4k1` END) FOR `l2Item` IN `l1Item`.`n1k1`.`n2k1` END) FOR `l1Item` IN `k2` END"
 				result := mongo.GenerateCouchbaseArrayIndex(input)
 				Expect(result).To(Equal(output))
 			})
@@ -291,7 +291,7 @@ var _ = Describe("mongo to couchbase index ", func() {
 				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
 				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
 				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
-				arrayExpression := "DISTINCT ARRAY (DISTINCT ARRAY FLATTEN_KEYS(`l2Item`.`n2k1`.`n3k1` ASC,`l2Item`.`n2k1`.`n3k2`.`n4k1` DESC,`l2Item`.`n2k2` ASC) FOR `l2Item` IN `l1Item`.`n1k1` END) FOR `l1Item` IN `k2` END"
+				arrayExpression := "ALL ARRAY (ALL ARRAY FLATTEN_KEYS(`l2Item`.`n2k1`.`n3k1` ASC,`l2Item`.`n2k1`.`n3k2`.`n4k1` DESC,`l2Item`.`n2k2` ASC) FOR `l2Item` IN `l1Item`.`n1k1` END) FOR `l1Item` IN `k2` END"
 				fields := []string{
 					"`k1`.`n1k1` ASC INCLUDE MISSING",
 					arrayExpression,
@@ -364,7 +364,7 @@ var _ = Describe("mongo to couchbase index ", func() {
 				fieldPath["k2.n1k1.n2k1.n3k1"] = "k2[].n1k1[].n2k1.n3k1"
 				fieldPath["k2.n1k1.n2k1.n3k2.n4k1"] = "k2[].n1k1[].n2k1.n3k2.n4k1"
 				fieldPath["k2.n1k1.n2k2"] = "k2[].n1k1[].n2k2"
-				arrayExpression := "DISTINCT ARRAY (DISTINCT ARRAY FLATTEN_KEYS(`l2Item`.`n2k1`.`n3k1` ASC,`l2Item`.`n2k1`.`n3k2`.`n4k1` DESC,`l2Item`.`n2k2` ASC) FOR `l2Item` IN `l1Item`.`n1k1` END) FOR `l1Item` IN `k2` END"
+				arrayExpression := "ALL ARRAY (ALL ARRAY FLATTEN_KEYS(`l2Item`.`n2k1`.`n3k1` ASC,`l2Item`.`n2k1`.`n3k2`.`n4k1` DESC,`l2Item`.`n2k2` ASC) FOR `l2Item` IN `l1Item`.`n1k1` END) FOR `l1Item` IN `k2` END"
 				fields := []string{
 					"`k1`.`n1k1` ASC INCLUDE MISSING",
 					arrayExpression,
