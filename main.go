@@ -14,10 +14,10 @@ func init() {
 }
 
 var (
-	Version = "" // - Ldflags will override this
+	version = "" // - Ldflags will override this
 )
 
 func main() {
-	common.SetVersion(Version)
+	common.SetVersion(version)
 	cmd.Execute()
 }
