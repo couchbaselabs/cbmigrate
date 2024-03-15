@@ -151,7 +151,7 @@ func GetCBFlags() []flag.Flag {
 		cbScope,
 		cbCollection,
 		batchSize,
-		GetVerboseFlag(),
+		GetDebugFlag(),
 	}
 	return flags
 }

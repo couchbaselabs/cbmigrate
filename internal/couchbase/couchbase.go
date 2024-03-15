@@ -72,7 +72,7 @@ func NewCouchbase(db repo.IRepo) common.IDestination {
 	}
 }
 
-func (c *Couchbase) Init(cbOpts *option.Options) (*common.DocumentKey, error) {
+func (c *Couchbase) Init(cbOpts *option.Options) (common.IDocumentKey, error) {
 	c.bucket = cbOpts.Bucket
 	c.scope = cbOpts.Scope
 	c.collection = cbOpts.Collection

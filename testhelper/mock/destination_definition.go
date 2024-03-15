@@ -69,10 +69,10 @@ func (mr *MockIDestinationMockRecorder) CreateIndexes(indexes any) *gomock.Call 
 }
 
 // Init mocks base method.
-func (m *MockIDestination) Init(opts *option.Options) (*common.DocumentKey, error) {
+func (m *MockIDestination) Init(opts *option.Options) (common.IDocumentKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Init", opts)
-	ret0, _ := ret[0].(*common.DocumentKey)
+	ret0, _ := ret[0].(common.IDocumentKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -55,7 +55,7 @@ cbmigrate mongo --mongodb-uri MONGODB_URI --mongodb-collection MONGODB_COLLECTIO
 - `--mongodb-collection string`: MongoDB collection to use.
 - `--mongodb-database string`: MongoDB database to use.
 - `--mongodb-uri string`: MongoDB URI connection string.
-- `--verbose`: Enable verbose output.
+- `--debug`: Enable debug output.
 
 
 
