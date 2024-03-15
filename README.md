@@ -16,7 +16,7 @@ cbmigrate [command]
 
 ### Available Commands
 - `help` - Displays help information about any command.
-- `mongo` - Specific commands for migrating data from MongoDB.
+- `mongo` - Migrate data from MongoDB to Couchbase
 
 ### Flags
 - `-h, --help` - help for `cbmigrate`.
