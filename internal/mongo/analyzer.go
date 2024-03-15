@@ -8,7 +8,7 @@ import (
 type IndexFieldAnalyzer struct {
 	indexes []Index
 	keys    map[string]*key
-	dk      *common.DocumentKey
+	dk      common.IDocumentKey
 }
 
 type occurrence int
@@ -24,7 +24,7 @@ func NewIndexFieldAnalyzer() common.Analyzer[Index] {
 	}
 }
 
-func (a *IndexFieldAnalyzer) Init(indexes []Index, dk *common.DocumentKey) {
+func (a *IndexFieldAnalyzer) Init(indexes []Index, dk common.IDocumentKey) {
 	a.indexes = indexes
 	for _, i := range indexes {
 		for _, key := range i.Keys {

@@ -17,11 +17,20 @@ const (
 
 const MetaDataID = "meta().id"
 
+type IDocumentKey interface {
+	Set(kind DocumentKind, value string)
+	Get() string
+}
+
 type DocumentKey struct {
-	key          string
+	Key          string
 	NotComposite bool
 	UUIDSet      bool
 	HasString    bool
+}
+
+func NewDocumentKey() *DocumentKey {
+	return &DocumentKey{}
 }
 
 func (d *DocumentKey) Set(kind DocumentKind, value string) {
@@ -31,8 +40,8 @@ func (d *DocumentKey) Set(kind DocumentKind, value string) {
 	case kind == "string":
 		d.HasString = true
 	case kind == "field":
-		if d.key == "" {
-			d.key = value
+		if d.Key == "" {
+			d.Key = value
 		}
 		d.NotComposite = true
 	}
@@ -40,7 +49,7 @@ func (d *DocumentKey) Set(kind DocumentKind, value string) {
 
 func (d *DocumentKey) Get() string {
 	if d.NotComposite && !d.UUIDSet && !d.HasString {
-		return d.key
+		return d.Key
 	}
 	return ""
 }

@@ -110,9 +110,8 @@ func BuildURI(host, port string) string {
 
 func ParesCouchbaseOptions(cmd *cobra.Command, collection string) (*option.Options, error) {
 
-	verbose, _ := cmd.Flags().GetBool(Verbose)
-	if verbose {
-		SetVerboseEnabled()
+	debug, _ := cmd.Flags().GetBool(Debug)
+	if debug {
 		logger.EnableDebugLevel()
 	}
 	var err error

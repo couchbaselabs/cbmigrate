@@ -66,7 +66,7 @@ func (mr *MockAnalyzerMockRecorder[T]) GetCouchbaseQuery(bucket, scope, collecti
 }
 
 // Init mocks base method.
-func (m *MockAnalyzer[T]) Init(index []T, suk *common.DocumentKey) {
+func (m *MockAnalyzer[T]) Init(index []T, suk common.IDocumentKey) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Init", index, suk)
 }

@@ -3,22 +3,12 @@ package common
 import "github.com/couchbaselabs/cbmigrate/cmd/flag"
 
 const (
-	Verbose = "verbose"
+	Debug = "debug"
 )
 
-var verboseEnabled = false
-
-func GetVerboseFlag() flag.Flag {
+func GetDebugFlag() flag.Flag {
 	return &flag.BoolFlag{
-		Name:  Verbose,
-		Usage: "enable verbose output.",
+		Name:  Debug,
+		Usage: "enable debug output.",
 	}
-}
-
-func SetVerboseEnabled() {
-	verboseEnabled = true
-}
-
-func IsVerboseEnabled() bool {
-	return verboseEnabled
 }

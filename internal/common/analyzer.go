@@ -10,7 +10,7 @@ import (
 )
 
 type Analyzer[T any] interface {
-	Init(index []T, suk *DocumentKey)
+	Init(index []T, suk IDocumentKey)
 	AnalyzeData(data map[string]interface{})
 	GetCouchbaseQuery(bucket, scope, collection string) []Index
 	//GetKeyPathWithArrayNotation(field string) string
