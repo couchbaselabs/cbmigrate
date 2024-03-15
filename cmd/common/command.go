@@ -1,11 +1,23 @@
 package common
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/couchbaselabs/cbmigrate/cmd/flag"
 	"github.com/spf13/cobra"
 )
+
+type Command string
+
+const (
+	Mongo     = "mongo"
+	CBMigrate = "cbmigrate"
+)
+
+var BetaCommands = []Command{
+	Mongo,
+}
 
 // Example command example
 type Example struct {
@@ -14,7 +26,7 @@ type Example struct {
 }
 
 // NewCommand command constructor
-func NewCommand(name string, alias []string, examples []Example, short string, long string, flags []flag.Flag) *cobra.Command {
+func NewCommand(name Command, alias []string, examples []Example, short string, long string, flags []flag.Flag) *cobra.Command {
 
 	var example strings.Builder
 	exsLen := len(examples)
@@ -40,8 +52,17 @@ func NewCommand(name string, alias []string, examples []Example, short string, l
 	flagUsages = append(flagUsages, "[--help HELP]")
 	flagUsage := strings.Join(flagUsages, " ")
 
+	if slices.Index(BetaCommands, name) > -1 {
+		if short != "" {
+			short = "[Beta] " + short
+		}
+		if long != "" {
+			long = "[Beta] " + long
+		}
+	}
+
 	cmd := &cobra.Command{
-		Use:                   name + " " + flagUsage,
+		Use:                   string(name) + " " + flagUsage,
 		Aliases:               alias,
 		Example:               example.String(),
 		Short:                 short,

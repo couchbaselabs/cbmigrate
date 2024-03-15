@@ -208,5 +208,6 @@ func NewCommand() *cobra.Command {
 			Usage: "Imports the data from mongo to couchbase.",
 		},
 	}
-	return common.NewCommand("mongo", []string{"m"}, examples, "", "", flags)
+	usage := "Migrate data from MongoDB to Couchbase"
+	return common.NewCommand(common.Mongo, []string{"m"}, examples, usage, usage, flags)
 }
