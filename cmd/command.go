@@ -32,7 +32,7 @@ func Execute() {
 			Usage: "Displays the version of this tool.",
 		},
 	}
-	cmd := common.NewCommand("cbmigrate", nil, nil, "", "", flags)
+	cmd := common.NewCommand(common.CBMigrate, nil, nil, "", "", flags)
 	cmd.AddCommand(completionCommand())
 	cmd.AddCommand(mongo.GetMongoMigrateCommand())
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
