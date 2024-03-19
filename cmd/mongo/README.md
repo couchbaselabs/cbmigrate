@@ -151,11 +151,16 @@ In this Couchbase index creation command:
 - Date and decimal types in MongoDB are converted to strings in Couchbase. Date string is in RFC3339 format.
 - While migrating the indexes currently text, wildcard and indexes with collation are currently not supported.
 - Compound index translations involving arrays and objects require specific syntax adaptations.
+- When migrating data from MongoDB time series collections, it's important to note that cbmigrate imports data based on the output of the find method. 
+This means the data is imported in its raw form, rather than the optimized bucket format MongoDB uses internally for performance.
 
 For more information about Mongodb indexes, refer to the following docs
 - https://www.mongodb.com/docs/manual/indexes
 - https://www.mongodb.com/docs/manual/core/indexes/index-types
 - https://www.mongodb.com/docs/manual/applications/indexes
+
+For more information about Mongodb time series collections, refer to the following docs
+- https://www.mongodb.com/docs/manual/core/timeseries-collections/
 
 For more information about Couchbase indexes, refer to the following docs
 - https://docs.couchbase.com/server/current/learn/services-and-indexes/indexes/indexes.html
