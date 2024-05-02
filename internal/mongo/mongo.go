@@ -14,21 +14,55 @@ import (
 
 type Mongo struct {
 	collection string
+	analyzer   Analyzer
 	db         repo.IRepo
+
+	CopyIndexes bool
 }
 
-func NewMongo(db repo.IRepo) common.ISource[Index, option.Options] {
+func NewMongo(db repo.IRepo, analyzer Analyzer) common.ISource[option.Options] {
 	return &Mongo{
-		db: db,
+		db:       db,
+		analyzer: analyzer,
 	}
 }
 
-func (m *Mongo) Init(opts *option.Options) error {
+func (m *Mongo) Init(opts *option.Options, documentKey common.IDocumentKey) error {
 	m.collection = opts.Collection
-	return m.db.Init(opts)
+	err := m.db.Init(opts)
+	if err != nil {
+		return err
+	}
+	m.CopyIndexes = opts.CopyIndexes
+	if m.CopyIndexes {
+		indexes, err := m.GetIndexes(context.Background())
+		if err != nil {
+			return err
+		}
+		m.analyzer.Init(indexes, documentKey)
+	}
+	return nil
+}
+
+func (m *Mongo) analyseData(mChan chan map[string]interface{}) chan map[string]interface{} {
+	// a new channel is used for analyzer because analyzing the data after decoding will be blocking.
+	analyseChan := make(chan map[string]interface{}, cap(mChan))
+	go func() {
+		for data := range analyseChan {
+			if m.CopyIndexes {
+				m.analyzer.AnalyzeData(data)
+			}
+			mChan <- data
+		}
+		close(mChan)
+	}()
+	return analyseChan
 }
 
 func (m *Mongo) StreamData(ctx context.Context, mChan chan map[string]interface{}) error {
+	analyseChan := m.analyseData(mChan)
+	defer close(analyseChan)
+
 	opts := options.Find().SetSort(bson.D{{"_id", 1}})
 	cursor, err := m.db.Find(m.collection, ctx, bson.M{}, opts)
 	if err != nil {
@@ -42,7 +76,7 @@ func (m *Mongo) StreamData(ctx context.Context, mChan chan map[string]interface{
 		if err != nil {
 			return err
 		}
-		mChan <- data
+		analyseChan <- data
 	}
 	err = cursor.Err()
 	return err
@@ -84,4 +118,8 @@ func (m *Mongo) GetIndexes(ctx context.Context) ([]Index, error) {
 		indexes = append(indexes, index)
 	}
 	return indexes, nil
+}
+
+func (m *Mongo) GetCouchbaseIndexesQuery(bucket string, scope string, collection string) []common.Index {
+	return m.analyzer.GetCouchbaseQuery(bucket, scope, collection)
 }

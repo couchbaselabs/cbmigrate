@@ -13,46 +13,47 @@ import (
 	reflect "reflect"
 
 	common "github.com/couchbaselabs/cbmigrate/internal/common"
+	mongo "github.com/couchbaselabs/cbmigrate/internal/mongo"
 	gomock "go.uber.org/mock/gomock"
 )
 
 // MockAnalyzer is a mock of Analyzer interface.
-type MockAnalyzer[T any] struct {
+type MockAnalyzer struct {
 	ctrl     *gomock.Controller
-	recorder *MockAnalyzerMockRecorder[T]
+	recorder *MockAnalyzerMockRecorder
 }
 
 // MockAnalyzerMockRecorder is the mock recorder for MockAnalyzer.
-type MockAnalyzerMockRecorder[T any] struct {
-	mock *MockAnalyzer[T]
+type MockAnalyzerMockRecorder struct {
+	mock *MockAnalyzer
 }
 
 // NewMockAnalyzer creates a new mock instance.
-func NewMockAnalyzer[T any](ctrl *gomock.Controller) *MockAnalyzer[T] {
-	mock := &MockAnalyzer[T]{ctrl: ctrl}
-	mock.recorder = &MockAnalyzerMockRecorder[T]{mock}
+func NewMockAnalyzer(ctrl *gomock.Controller) *MockAnalyzer {
+	mock := &MockAnalyzer{ctrl: ctrl}
+	mock.recorder = &MockAnalyzerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockAnalyzer[T]) EXPECT() *MockAnalyzerMockRecorder[T] {
+func (m *MockAnalyzer) EXPECT() *MockAnalyzerMockRecorder {
 	return m.recorder
 }
 
 // AnalyzeData mocks base method.
-func (m *MockAnalyzer[T]) AnalyzeData(data map[string]any) {
+func (m *MockAnalyzer) AnalyzeData(data map[string]any) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "AnalyzeData", data)
 }
 
 // AnalyzeData indicates an expected call of AnalyzeData.
-func (mr *MockAnalyzerMockRecorder[T]) AnalyzeData(data any) *gomock.Call {
+func (mr *MockAnalyzerMockRecorder) AnalyzeData(data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnalyzeData", reflect.TypeOf((*MockAnalyzer[T])(nil).AnalyzeData), data)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnalyzeData", reflect.TypeOf((*MockAnalyzer)(nil).AnalyzeData), data)
 }
 
 // GetCouchbaseQuery mocks base method.
-func (m *MockAnalyzer[T]) GetCouchbaseQuery(bucket, scope, collection string) []common.Index {
+func (m *MockAnalyzer) GetCouchbaseQuery(bucket, scope, collection string) []common.Index {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCouchbaseQuery", bucket, scope, collection)
 	ret0, _ := ret[0].([]common.Index)
@@ -60,19 +61,19 @@ func (m *MockAnalyzer[T]) GetCouchbaseQuery(bucket, scope, collection string) []
 }
 
 // GetCouchbaseQuery indicates an expected call of GetCouchbaseQuery.
-func (mr *MockAnalyzerMockRecorder[T]) GetCouchbaseQuery(bucket, scope, collection any) *gomock.Call {
+func (mr *MockAnalyzerMockRecorder) GetCouchbaseQuery(bucket, scope, collection any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCouchbaseQuery", reflect.TypeOf((*MockAnalyzer[T])(nil).GetCouchbaseQuery), bucket, scope, collection)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCouchbaseQuery", reflect.TypeOf((*MockAnalyzer)(nil).GetCouchbaseQuery), bucket, scope, collection)
 }
 
 // Init mocks base method.
-func (m *MockAnalyzer[T]) Init(index []T, suk common.IDocumentKey) {
+func (m *MockAnalyzer) Init(index []mongo.Index, suk common.IDocumentKey) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Init", index, suk)
 }
 
 // Init indicates an expected call of Init.
-func (mr *MockAnalyzerMockRecorder[T]) Init(index, suk any) *gomock.Call {
+func (mr *MockAnalyzerMockRecorder) Init(index, suk any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockAnalyzer[T])(nil).Init), index, suk)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockAnalyzer)(nil).Init), index, suk)
 }

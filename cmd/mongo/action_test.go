@@ -97,10 +97,11 @@ var _ = Describe("mongo", func() {
 						Collection: mongodbCollection,
 						DB:         mongodbDb,
 					},
-					Connection: &mOpts.Connection{},
-					SSL:        &mOpts.SSL{UseSSL: true},
-					Auth:       &mOpts.Auth{},
-					Kerberos:   &mOpts.Kerberos{},
+					Connection:  &mOpts.Connection{},
+					SSL:         &mOpts.SSL{UseSSL: true},
+					Auth:        &mOpts.Auth{},
+					Kerberos:    &mOpts.Kerberos{},
+					CopyIndexes: true,
 				}
 				expectedCbOpts := &option.Options{
 					Cluster: cbCluster,
@@ -152,10 +153,11 @@ var _ = Describe("mongo", func() {
 						Collection: mongodbCollection,
 						DB:         mongodbDb,
 					},
-					Connection: &mOpts.Connection{},
-					SSL:        &mOpts.SSL{UseSSL: true},
-					Auth:       &mOpts.Auth{},
-					Kerberos:   &mOpts.Kerberos{},
+					Connection:  &mOpts.Connection{},
+					SSL:         &mOpts.SSL{UseSSL: true},
+					Auth:        &mOpts.Auth{},
+					Kerberos:    &mOpts.Kerberos{},
+					CopyIndexes: true,
 				}
 				expectedCbOpts := &option.Options{
 					Cluster: cbCluster,
