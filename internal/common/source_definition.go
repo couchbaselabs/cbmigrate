@@ -6,7 +6,7 @@ import (
 )
 
 type ISource[Options any] interface {
-	Init(opts *Options, documentKey IDocumentKey) error
+	Init(opts *Options, documentKey ICBDocumentKey) error
 	StreamData(context.Context, chan map[string]interface{}) error
-	GetCouchbaseIndexesQuery(bucket string, scope string, collection string) []Index
+	GetCouchbaseIndexesQuery(bucket string, scope string, collection string) ([]Index, error)
 }

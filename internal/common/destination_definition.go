@@ -7,7 +7,7 @@ import (
 )
 
 type IDestination interface {
-	Init(opts *option.Options) (IDocumentKey, error)
+	Init(opts *option.Options, documentKey ICBDocumentKey) error
 	ProcessData(map[string]interface{}) error
 	Complete() error
 	CreateIndexes(indexes []Index) error

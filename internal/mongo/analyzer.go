@@ -1,6 +1,6 @@
 package mongo
 
-//go:generate mockgen -source=analyzer.go -destination=../../testhelper/mock/index.go -package=mock_test Analyzer
+//go:generate mockgen -source=analyzer.go -destination=../../testhelper/mock/mongo_analyzer.go -package=mock_test Analyzer
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 )
 
 type Analyzer interface {
-	Init(index []Index, suk common.IDocumentKey)
+	Init(index []Index, documentKey common.ICBDocumentKey)
 	AnalyzeData(data map[string]interface{})
 	GetCouchbaseQuery(bucket, scope, collection string) []common.Index
 	//GetKeyPathWithArrayNotation(field string) string
@@ -21,7 +21,7 @@ type Analyzer interface {
 type IndexFieldAnalyzer struct {
 	indexes []Index
 	keys    map[string]*key
-	dk      common.IDocumentKey
+	dk      common.ICBDocumentKey
 }
 
 type occurrence int
@@ -37,7 +37,7 @@ func NewIndexFieldAnalyzer() Analyzer {
 	}
 }
 
-func (a *IndexFieldAnalyzer) Init(indexes []Index, dk common.IDocumentKey) {
+func (a *IndexFieldAnalyzer) Init(indexes []Index, documentKey common.ICBDocumentKey) {
 	a.indexes = indexes
 	for _, i := range indexes {
 		for _, key := range i.Keys {
@@ -49,7 +49,7 @@ func (a *IndexFieldAnalyzer) Init(indexes []Index, dk common.IDocumentKey) {
 			}
 		}
 	}
-	a.dk = dk
+	a.dk = documentKey
 }
 
 func (a *IndexFieldAnalyzer) AnalyzeData(data map[string]interface{}) {
@@ -90,7 +90,7 @@ func (a *IndexFieldAnalyzer) getIndexFieldPath() IndexFieldPath {
 		}
 		indexKeyAlias[field] = f
 	}
-	if k := a.dk.Get(); k != "" {
+	if k := a.dk.GetPrimaryKeyOnly(); k != "" {
 		indexKeyAlias[k] = common.MetaDataID
 	}
 	return indexKeyAlias
@@ -107,7 +107,7 @@ func (a *IndexFieldAnalyzer) GetCouchbaseQuery(bucket, scope, collection string)
 		switch {
 		case mindex.Error != nil:
 			cindex.Error = mindex.Error
-		case len(mindex.Keys) == 1 && a.dk.Get() == mindex.Keys[0].Field:
+		case len(mindex.Keys) == 1 && a.dk.GetPrimaryKeyOnly() == mindex.Keys[0].Field:
 			cindex.Query = fmt.Sprintf(
 				"CREATE PRIMARY INDEX `%s` on `%s`.`%s`.`%s` USING GSI WITH {\"defer_build\":true}",
 				mindex.Name, bucket, scope, collection)

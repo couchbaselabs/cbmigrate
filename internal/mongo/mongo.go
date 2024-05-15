@@ -27,7 +27,7 @@ func NewMongo(db repo.IRepo, analyzer Analyzer) common.ISource[option.Options] {
 	}
 }
 
-func (m *Mongo) Init(opts *option.Options, documentKey common.IDocumentKey) error {
+func (m *Mongo) Init(opts *option.Options, documentKey common.ICBDocumentKey) error {
 	m.collection = opts.Collection
 	err := m.db.Init(opts)
 	if err != nil {
@@ -120,6 +120,6 @@ func (m *Mongo) GetIndexes(ctx context.Context) ([]Index, error) {
 	return indexes, nil
 }
 
-func (m *Mongo) GetCouchbaseIndexesQuery(bucket string, scope string, collection string) []common.Index {
-	return m.analyzer.GetCouchbaseQuery(bucket, scope, collection)
+func (m *Mongo) GetCouchbaseIndexesQuery(bucket string, scope string, collection string) ([]common.Index, error) {
+	return m.analyzer.GetCouchbaseQuery(bucket, scope, collection), nil
 }

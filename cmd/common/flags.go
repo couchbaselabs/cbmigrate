@@ -63,12 +63,14 @@ var cbClientKeyPassword = &flag.StringFlag{
 	Usage: "The password for the key provided to the --client-key flag, when using this flag, the key is expected to be in the PKCS#8 format.",
 }
 
-var cbGenerateKey = &flag.StringFlag{
-	Name: CBGenerateKey,
-	Usage: "Specifies a key expression used for generating a key for each document imported." +
-		" This option allows for the creation of unique document keys in Couchbase by combining static text," +
-		" field values (denoted by %fieldname%), and custom generators (like #UUID#) in a format like \"key::%name%::#UUID#\"",
-	Value: "%_id%",
+func GetCBGenerateKeyOption(value string) flag.Flag {
+	return &flag.StringFlag{
+		Name: CBGenerateKey,
+		Usage: "Specifies a key expression used for generating a key for each document imported." +
+			" This option allows for the creation of unique document keys in Couchbase by combining static text," +
+			" field values (denoted by %fieldname%), and custom generators (like #UUID#) in a format like \"key::%name%::#UUID#\"",
+		Value: value,
+	}
 }
 
 var cbCACert = &flag.StringFlag{
@@ -144,7 +146,6 @@ func GetCBFlags() []flag.Flag {
 			RequiredBrace: true,
 			Required:      true,
 		},
-		cbGenerateKey,
 		cbCACert,
 		cbNoSSLVerify,
 		cbBucket,

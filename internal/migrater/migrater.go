@@ -21,11 +21,12 @@ type Migrate[Options any] struct {
 
 func (m Migrate[Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIndexes bool, bufferSize int) error {
 
-	dk, err := m.Destination.Init(cbOpts)
+	documentKey := common.NewCBDocumentKey()
+	err := m.Source.Init(mOpts, documentKey)
 	if err != nil {
 		return err
 	}
-	err = m.Source.Init(mOpts, dk)
+	err = m.Destination.Init(cbOpts, documentKey)
 	if err != nil {
 		return err
 	}
@@ -53,7 +54,7 @@ func (m Migrate[Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIndex
 		dErr = m.Destination.Complete()
 		return nil
 	})
-	g.Wait()
+	_ = g.Wait()
 	if dErr != nil {
 		err = errors.Join(err, dErr)
 	}
@@ -65,8 +66,11 @@ func (m Migrate[Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIndex
 	}
 	zap.S().Info("data migration completed")
 	if copyIndexes {
-		cbIndexes := m.Source.GetCouchbaseIndexesQuery(cbOpts.Bucket, cbOpts.Scope, cbOpts.Collection)
 		zap.S().Info("index migration started")
+		cbIndexes, err := m.Source.GetCouchbaseIndexesQuery(cbOpts.Bucket, cbOpts.Scope, cbOpts.Collection)
+		if err != nil {
+			return err
+		}
 		err = m.Destination.CreateIndexes(cbIndexes)
 		if err != nil {
 			return err

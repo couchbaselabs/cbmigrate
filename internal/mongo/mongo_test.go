@@ -13,7 +13,7 @@ import (
 	"github.com/couchbaselabs/cbmigrate/internal/common"
 	"github.com/couchbaselabs/cbmigrate/internal/mongo"
 	mOpts "github.com/couchbaselabs/cbmigrate/internal/mongo/option"
-	mock_test "github.com/couchbaselabs/cbmigrate/testhelper/mock"
+	mocktest "github.com/couchbaselabs/cbmigrate/testhelper/mock"
 )
 
 var repoIndexes = []repo.Indexes{
@@ -32,17 +32,17 @@ var _ = Describe("mongo service", func() {
 	Describe("test mongoService streaming", func() {
 		var (
 			ctrl         *gomock.Controller
-			db           *mock_test.MockMongoIRepo
-			analyzer     *mock_test.MockAnalyzer
-			cursor       *mock_test.MockMongoICursor
+			db           *mocktest.MockMongoIRepo
+			analyzer     *mocktest.MockAnalyzer
+			cursor       *mocktest.MockMongoICursor
 			mongoService common.ISource[mOpts.Options]
 		)
 		opts := &mOpts.Options{Namespace: &mOpts.Namespace{Collection: "test_col"}, CopyIndexes: true}
 		BeforeEach(func() {
 			ctrl = gomock.NewController(GinkgoT())
-			db = mock_test.NewMockMongoIRepo(ctrl)
-			analyzer = mock_test.NewMockAnalyzer(ctrl)
-			cursor = mock_test.NewMockMongoICursor(ctrl)
+			db = mocktest.NewMockMongoIRepo(ctrl)
+			analyzer = mocktest.NewMockAnalyzer(ctrl)
+			cursor = mocktest.NewMockMongoICursor(ctrl)
 			mongoService = mongo.NewMongo(db, analyzer)
 		})
 		AfterEach(func() {

@@ -41,11 +41,12 @@ func (m *MockISource[Options]) EXPECT() *MockISourceMockRecorder[Options] {
 }
 
 // GetCouchbaseIndexesQuery mocks base method.
-func (m *MockISource[Options]) GetCouchbaseIndexesQuery(bucket, scope, collection string) []common.Index {
+func (m *MockISource[Options]) GetCouchbaseIndexesQuery(bucket, scope, collection string) ([]common.Index, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCouchbaseIndexesQuery", bucket, scope, collection)
 	ret0, _ := ret[0].([]common.Index)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetCouchbaseIndexesQuery indicates an expected call of GetCouchbaseIndexesQuery.
@@ -55,7 +56,7 @@ func (mr *MockISourceMockRecorder[Options]) GetCouchbaseIndexesQuery(bucket, sco
 }
 
 // Init mocks base method.
-func (m *MockISource[Options]) Init(opts *Options, documentKey common.IDocumentKey) error {
+func (m *MockISource[Options]) Init(opts *Options, documentKey common.ICBDocumentKey) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Init", opts, documentKey)
 	ret0, _ := ret[0].(error)

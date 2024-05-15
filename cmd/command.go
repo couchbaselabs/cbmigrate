@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/couchbaselabs/cbmigrate/cmd/common"
+	"github.com/couchbaselabs/cbmigrate/cmd/dynamodb"
 	"github.com/couchbaselabs/cbmigrate/cmd/mongo"
 	"github.com/spf13/cobra"
 	"os"
@@ -35,6 +36,7 @@ func Execute() {
 	cmd := common.NewCommand(common.CBMigrate, nil, nil, "", "", flags)
 	cmd.AddCommand(completionCommand())
 	cmd.AddCommand(mongo.GetMongoMigrateCommand())
+	cmd.AddCommand(dynamodb.GetDynamoDBMigrateCommand())
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed(Version) {
 			fmt.Println("Version: " + common.Version)

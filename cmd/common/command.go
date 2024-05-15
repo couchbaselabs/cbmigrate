@@ -12,6 +12,7 @@ type Command string
 
 const (
 	Mongo     = "mongo"
+	DynamoDB  = "dynamodb"
 	CBMigrate = "cbmigrate"
 )
 

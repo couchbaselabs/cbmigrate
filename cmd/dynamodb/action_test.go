@@ -1,16 +1,15 @@
-package mongo_test
+package dynamodb_test
 
 import (
 	_ "embed"
 	"github.com/couchbaselabs/cbmigrate/cmd/common"
-	"github.com/couchbaselabs/cbmigrate/cmd/mongo"
-	"github.com/couchbaselabs/cbmigrate/cmd/mongo/command"
+	"github.com/couchbaselabs/cbmigrate/cmd/dynamodb"
+	"github.com/couchbaselabs/cbmigrate/cmd/dynamodb/command"
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
-	mOpts "github.com/couchbaselabs/cbmigrate/internal/mongo/option"
+	dOpts "github.com/couchbaselabs/cbmigrate/internal/dynamodb/option"
 	mocktest "github.com/couchbaselabs/cbmigrate/testhelper/mock"
 	"github.com/spf13/cobra"
 	"go.uber.org/mock/gomock"
-	"go.uber.org/zap/zapcore"
 	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -29,9 +28,13 @@ func (i *Integer) Int() int {
 var _ = Describe("mongo", func() {
 
 	Describe("mongo command", func() {
-		mongodbUriOption := "--" + command.MongoDBURI
-		mongodbDbOption := "--" + command.MongoDBDatabase
-		mongodbCollectionOption := "--" + command.MongoDBCollection
+		dynamoDBTableNameOption := "--" + command.DynamoDBTableName
+		dynamoDBEndpointURLOption := "--" + command.DynamoDBEndpointURL
+		dynamoDBProfileOption := "--" + command.DynamoDBProfile
+		dynamoDBRegionOption := "--" + command.DynamoDBRegion
+		dynamoDBCaBundleOption := "--" + command.DynamoDBCaBundle
+		dynamoDBNoVerifySSLOption := "--" + command.DynamoDBNoVerifySSL
+
 		cbClusterOption := "--" + common.CBCluster
 		cbUserOption := "--" + common.CBUsername
 		cbPasswordOption := "--" + common.CBPassword
@@ -39,30 +42,37 @@ var _ = Describe("mongo", func() {
 		cbScopeOption := "--" + common.CBScope
 		cbCollectionOption := "--" + common.CBCollection
 		cbBatchSizeOption := "--" + common.CBBatchSize
+		cbGeneratorKeyOption := "--" + common.CBGenerateKey
 
 		bufferSizeOption := "--" + common.BufferSize
 
-		mongodbUri := "uri"
-		mongodbDb := "mongo-db"
-		mongodbCollection := "mongo-collection"
+		dynamoDBTableName := "test-table"
+		dynamoDBEndpointURL := "aws-endpoint"
+		dynamoDBProfile := "aws-profile"
+		dynamoDBRegion := "us-east-1"
+		dynamoDBCaBundle := "path"
+
 		cbCluster := "localhost"
 		cbUser := "admin"
 		cbPassword := "password"
 		cbBucket := "cb-bucket"
 		cbScope := "scope"
 		cbCollection := "cb-collection"
+		cbGeneratorKey := "%id%"
+
 		cbBatchSize := Integer(2000)
 		bufferSize := Integer(20000)
+
 		var (
 			ctrl    *gomock.Controller
-			migrate *mocktest.MockIMigrate[mOpts.Options]
+			migrate *mocktest.MockIMigrate[dOpts.Options]
 			cmd     *cobra.Command
-			action  *mongo.Action
+			action  *dynamodb.Action
 		)
 		BeforeEach(func() {
 			ctrl = gomock.NewController(GinkgoT())
-			migrate = mocktest.NewMockIMigrate[mOpts.Options](ctrl)
-			action = &mongo.Action{Migrate: migrate}
+			migrate = mocktest.NewMockIMigrate[dOpts.Options](ctrl)
+			action = &dynamodb.Action{Migrate: migrate}
 			cmd = command.NewCommand()
 			cmd.RunE = action.RunE
 		})
@@ -72,36 +82,31 @@ var _ = Describe("mongo", func() {
 		Context("success", func() {
 			It("Input assertion case1", func() {
 
-				var mOptsGot *mOpts.Options
+				var dOptsGot *dOpts.Options
 				var cbOptsGot *option.Options
 				var copyIndexesGot bool
 				var bufferSizeGot int
-				migrate.EXPECT().Copy(gomock.Any(), gomock.Any(), true, 10000).DoAndReturn(func(mOpts *mOpts.Options, cbOpts *option.Options, copyIndexes bool, bufferSize int) error {
-					mOptsGot = mOpts
+				migrate.EXPECT().Copy(gomock.Any(), gomock.Any(), true, 10000).DoAndReturn(func(dOpts *dOpts.Options, cbOpts *option.Options, copyIndexes bool, bufferSize int) error {
+					dOptsGot = dOpts
 					cbOptsGot = cbOpts
 					copyIndexesGot = copyIndexes
 					bufferSizeGot = bufferSize
 					return nil
 				})
 
-				_, err := common.ExecuteCommand(cmd, mongodbUriOption, mongodbUri, mongodbDbOption, mongodbDb,
-					mongodbCollectionOption, mongodbCollection,
-					cbClusterOption, cbCluster, cbUserOption, cbUser, cbPasswordOption, cbPassword,
-					cbBucketOption, cbBucket, cbScopeOption, cbScope)
+				_, err := common.ExecuteCommand(cmd, dynamoDBTableNameOption, dynamoDBTableName,
+					dynamoDBEndpointURLOption, dynamoDBEndpointURL, dynamoDBProfileOption, dynamoDBProfile,
+					dynamoDBRegionOption, dynamoDBRegion, dynamoDBCaBundleOption, dynamoDBCaBundle,
+					dynamoDBNoVerifySSLOption, cbClusterOption, cbCluster, cbUserOption, cbUser, cbPasswordOption,
+					cbPassword, cbBucketOption, cbBucket, cbScopeOption, cbScope)
 				Expect(err).To(BeNil())
-				expectedMopts := &mOpts.Options{
-					URI: &mOpts.URI{
-						ConnectionString: mongodbUri,
-					},
-					Namespace: &mOpts.Namespace{
-						Collection: mongodbCollection,
-						DB:         mongodbDb,
-					},
-					Connection:  &mOpts.Connection{},
-					SSL:         &mOpts.SSL{UseSSL: true},
-					Auth:        &mOpts.Auth{},
-					Kerberos:    &mOpts.Kerberos{},
-					CopyIndexes: true,
+				expectedDopts := &dOpts.Options{
+					TableName:   dynamoDBTableName,
+					EndpointUrl: dynamoDBEndpointURL,
+					NoSSLVerify: true,
+					Profile:     dynamoDBProfile,
+					Region:      dynamoDBRegion,
+					CABundle:    dynamoDBCaBundle,
 				}
 				expectedCbOpts := &option.Options{
 					Cluster: cbCluster,
@@ -112,14 +117,13 @@ var _ = Describe("mongo", func() {
 					NameSpace: &option.NameSpace{
 						Bucket:     cbBucket,
 						Scope:      cbScope,
-						Collection: mongodbCollection,
+						Collection: dynamoDBTableName,
 					},
-					SSL:          &option.SSL{},
-					GeneratedKey: "%_id%",
-					BatchSize:    200,
+					SSL:       &option.SSL{},
+					BatchSize: 200,
 				}
 
-				Expect(mOptsGot).To(Equal(expectedMopts))
+				Expect(dOptsGot).To(Equal(expectedDopts))
 				Expect(cbOptsGot).To(Equal(expectedCbOpts))
 				Expect(copyIndexesGot).To(Equal(true))
 				Expect(bufferSizeGot).To(Equal(10000))
@@ -127,37 +131,25 @@ var _ = Describe("mongo", func() {
 
 			It("Input assertion case2", func() {
 
-				var mOptsGot *mOpts.Options
+				var dOptsGot *dOpts.Options
 				var cbOptsGot *option.Options
 				var copyIndexesGot bool
 				var bufferSizeGot int
-				migrate.EXPECT().Copy(gomock.Any(), gomock.Any(), true, bufferSize.Int()).DoAndReturn(func(mOpts *mOpts.Options, cbOpts *option.Options, copyIndexes bool, bufferSize int) error {
-					mOptsGot = mOpts
+				migrate.EXPECT().Copy(gomock.Any(), gomock.Any(), true, bufferSize.Int()).DoAndReturn(func(dOpts *dOpts.Options, cbOpts *option.Options, copyIndexes bool, bufferSize int) error {
+					dOptsGot = dOpts
 					cbOptsGot = cbOpts
 					copyIndexesGot = copyIndexes
 					bufferSizeGot = bufferSize
 					return nil
 				})
 
-				_, err := common.ExecuteCommand(cmd, mongodbUriOption, mongodbUri, mongodbDbOption, mongodbDb,
-					mongodbCollectionOption, mongodbCollection,
+				_, err := common.ExecuteCommand(cmd, dynamoDBTableNameOption, dynamoDBTableName,
 					cbClusterOption, cbCluster, cbUserOption, cbUser, cbPasswordOption, cbPassword,
-					cbBucketOption, cbBucket, cbCollectionOption, cbCollection,
+					cbBucketOption, cbBucket, cbCollectionOption, cbCollection, cbGeneratorKeyOption, cbGeneratorKey,
 					cbScopeOption, cbScope, cbBatchSizeOption, cbBatchSize.String(), bufferSizeOption, bufferSize.String())
 				Expect(err).To(BeNil())
-				expectedMopts := &mOpts.Options{
-					URI: &mOpts.URI{
-						ConnectionString: mongodbUri,
-					},
-					Namespace: &mOpts.Namespace{
-						Collection: mongodbCollection,
-						DB:         mongodbDb,
-					},
-					Connection:  &mOpts.Connection{},
-					SSL:         &mOpts.SSL{UseSSL: true},
-					Auth:        &mOpts.Auth{},
-					Kerberos:    &mOpts.Kerberos{},
-					CopyIndexes: true,
+				expectedDopts := &dOpts.Options{
+					TableName: dynamoDBTableName,
 				}
 				expectedCbOpts := &option.Options{
 					Cluster: cbCluster,
@@ -171,11 +163,11 @@ var _ = Describe("mongo", func() {
 						Collection: cbCollection,
 					},
 					SSL:          &option.SSL{},
-					GeneratedKey: "%_id%",
+					GeneratedKey: "%id%",
 					BatchSize:    cbBatchSize.Int(),
 				}
 
-				Expect(mOptsGot).To(Equal(expectedMopts))
+				Expect(dOptsGot).To(Equal(expectedDopts))
 				Expect(cbOptsGot).To(Equal(expectedCbOpts))
 				Expect(copyIndexesGot).To(Equal(true))
 				Expect(bufferSizeGot).To(Equal(bufferSize.Int()))
@@ -187,9 +179,3 @@ var _ = Describe("mongo", func() {
 		})
 	})
 })
-
-type FatalHook struct {
-}
-
-func (h FatalHook) OnWrite(*zapcore.CheckedEntry, []zapcore.Field) {
-}

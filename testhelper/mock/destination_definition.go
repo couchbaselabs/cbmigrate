@@ -69,18 +69,17 @@ func (mr *MockIDestinationMockRecorder) CreateIndexes(indexes any) *gomock.Call 
 }
 
 // Init mocks base method.
-func (m *MockIDestination) Init(opts *option.Options) (common.IDocumentKey, error) {
+func (m *MockIDestination) Init(opts *option.Options, documentKey common.ICBDocumentKey) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Init", opts)
-	ret0, _ := ret[0].(common.IDocumentKey)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "Init", opts, documentKey)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Init indicates an expected call of Init.
-func (mr *MockIDestinationMockRecorder) Init(opts any) *gomock.Call {
+func (mr *MockIDestinationMockRecorder) Init(opts, documentKey any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockIDestination)(nil).Init), opts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockIDestination)(nil).Init), opts, documentKey)
 }
 
 // ProcessData mocks base method.

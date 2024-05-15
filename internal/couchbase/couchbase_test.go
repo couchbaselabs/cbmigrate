@@ -72,11 +72,32 @@ var _ = Describe("couchbase service", func() {
 						scopeSpec3,
 					}, nil
 				})
-
-				dk, err := couchbaseService.Init(opts)
+				docKey := common.NewCBDocumentKey()
+				docKey.Set([]common.DocumentKeyPart{{Kind: common.DkField, Value: "id"}})
+				err := couchbaseService.Init(opts, docKey)
+				Expect(docKey.GetKey()).To(Equal([]common.DocumentKeyPart{{Kind: common.DkField, Value: "_id"}}))
 				Expect(err).To(BeNil())
-				expectedDK := &common.DocumentKey{Key: "_id", NotComposite: true}
-				Expect(dk).To(Equal(expectedDK))
+
+			})
+			It("scope and collection exists and without generated key", func() {
+				opts := &cOpts.Options{
+					Cluster:   "cluster-url",
+					NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col"},
+					BatchSize: 100,
+				}
+				db.EXPECT().Init(opts.Cluster, opts).Return(nil)
+				db.EXPECT().GetAllScopes().DoAndReturn(func() ([]gocb.ScopeSpec, error) {
+					return []gocb.ScopeSpec{
+						scopeSpec1,
+						scopeSpec2,
+						scopeSpec3,
+					}, nil
+				})
+				docKey := common.NewCBDocumentKey()
+				docKey.Set([]common.DocumentKeyPart{{Kind: common.DkField, Value: "id"}})
+				err := couchbaseService.Init(opts, common.NewCBDocumentKey())
+				Expect(docKey.GetKey()).To(Equal([]common.DocumentKeyPart{{Kind: common.DkField, Value: "id"}}))
+				Expect(err).To(BeNil())
 
 			})
 			It("create scope and collection", func() {
@@ -94,9 +115,8 @@ var _ = Describe("couchbase service", func() {
 				})
 				db.EXPECT().CreateScope(opts.Scope).Return(nil)
 				db.EXPECT().CreateCollection(opts.Scope, opts.Collection).Return(nil)
-				dk, err := couchbaseService.Init(opts)
+				err := couchbaseService.Init(opts, common.NewCBDocumentKey())
 				Expect(err).To(BeNil())
-				Expect(dk).To(Equal(&common.DocumentKey{}))
 			})
 			It("create collection", func() {
 				opts := &cOpts.Options{
@@ -114,7 +134,7 @@ var _ = Describe("couchbase service", func() {
 					}, nil
 				})
 				db.EXPECT().CreateCollection(opts.Scope, opts.Collection).Return(nil)
-				_, err := couchbaseService.Init(opts)
+				err := couchbaseService.Init(opts, common.NewCBDocumentKey())
 				Expect(err).To(BeNil())
 			})
 		})
@@ -128,7 +148,7 @@ var _ = Describe("couchbase service", func() {
 				getAllScopeError := errors.New("error in getting all scopes")
 				db.EXPECT().Init(opts.Cluster, opts).Return(nil)
 				db.EXPECT().GetAllScopes().Return(nil, getAllScopeError)
-				_, err := couchbaseService.Init(opts)
+				err := couchbaseService.Init(opts, common.NewCBDocumentKey())
 				Expect(err).NotTo(BeNil())
 				Expect(err).To(Equal(getAllScopeError))
 			})
@@ -147,7 +167,7 @@ var _ = Describe("couchbase service", func() {
 					}, nil
 				})
 				db.EXPECT().CreateScope(opts.Scope).Return(createScopeError)
-				_, err := couchbaseService.Init(opts)
+				err := couchbaseService.Init(opts, common.NewCBDocumentKey())
 				Expect(err).NotTo(BeNil())
 				Expect(err).To(Equal(createScopeError))
 			})
@@ -167,7 +187,7 @@ var _ = Describe("couchbase service", func() {
 					}, nil
 				})
 				db.EXPECT().CreateCollection(opts.Scope, opts.Collection).Return(createCollectionError)
-				_, err := couchbaseService.Init(opts)
+				err := couchbaseService.Init(opts, common.NewCBDocumentKey())
 				Expect(err).NotTo(BeNil())
 				Expect(err).To(Equal(createCollectionError))
 			})
@@ -188,7 +208,7 @@ var _ = Describe("couchbase service", func() {
 				})
 				db.EXPECT().CreateScope(opts.Scope).Return(nil)
 				db.EXPECT().CreateCollection(opts.Scope, opts.Collection).Return(createCollectionError)
-				_, err := couchbaseService.Init(opts)
+				err := couchbaseService.Init(opts, common.NewCBDocumentKey())
 				Expect(err).NotTo(BeNil())
 				Expect(err).To(Equal(createCollectionError))
 			})
@@ -200,7 +220,7 @@ var _ = Describe("couchbase service", func() {
 				}
 				dbConInitError := errors.New("error in initializing db connection")
 				db.EXPECT().Init(opts.Cluster, opts).Return(dbConInitError)
-				_, err := couchbaseService.Init(opts)
+				err := couchbaseService.Init(opts, common.NewCBDocumentKey())
 				Expect(err).NotTo(BeNil())
 				Expect(err).To(Equal(dbConInitError))
 			})
@@ -249,7 +269,7 @@ var _ = Describe("couchbase service", func() {
 		})
 		Context("data processing success", func() {
 			It("upsert data when batch size is 100", func() {
-				_, err := couchbaseService.Init(opts)
+				err := couchbaseService.Init(opts, common.NewCBDocumentKey())
 				Expect(err).To(BeNil())
 				i := 0
 				db.EXPECT().UpsertData(opts.Scope, opts.Collection, gomock.Any()).Times(5).DoAndReturn(func(scope, collection string, uDocs []gocb.BulkOp) error {
@@ -280,7 +300,7 @@ var _ = Describe("couchbase service", func() {
 						"k5":  "v5",
 					})
 				}
-				_, err := couchbaseService.Init(opts)
+				err := couchbaseService.Init(opts, common.NewCBDocumentKey())
 				Expect(err).To(BeNil())
 				i := 0
 				db.EXPECT().UpsertData(opts.Scope, opts.Collection, gomock.Any()).Times(6).DoAndReturn(func(scope, collection string, uDocs []gocb.BulkOp) error {
@@ -313,7 +333,7 @@ var _ = Describe("couchbase service", func() {
 						"k5":  "v5",
 					})
 				}
-				_, err := couchbaseService.Init(opts)
+				err := couchbaseService.Init(opts, common.NewCBDocumentKey())
 				Expect(err).To(BeNil())
 				processDataError := errors.New("error in processing the data")
 				db.EXPECT().UpsertData(opts.Scope, opts.Collection, gomock.Any()).Times(6).Return(processDataError)

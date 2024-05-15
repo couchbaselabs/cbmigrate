@@ -193,6 +193,7 @@ func NewCommand() *cobra.Command {
 		mongoDBReadPreference,
 	}
 	flags = append(flags, common.GetCBFlags()...)
+	flags = append(flags, common.GetCBGenerateKeyOption("%_id%"))
 	flags = append(flags, common.GetCommonFlags()...)
 	examples := []common.Example{
 		{
