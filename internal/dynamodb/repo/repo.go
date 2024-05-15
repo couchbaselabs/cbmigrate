@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	dynamoDB "github.com/couchbaselabs/cbmigrate/internal/db/dynamodb"
 	"github.com/couchbaselabs/cbmigrate/internal/dynamodb/option"
-	"go.uber.org/zap"
 	"strings"
 )
 
@@ -57,7 +56,6 @@ func (r *Repo) GetIndexes(ctx context.Context) ([]Index, error) {
 	if err != nil {
 		return nil, err
 	}
-	zap.L().Debug("Metadata for scan result", zap.Any("ResultMetadata", output.ResultMetadata))
 	var indexes []Index
 	indexes = append(indexes, getIndexFromSchema(output.Table.KeySchema))
 	for _, index := range output.Table.LocalSecondaryIndexes {
@@ -74,7 +72,6 @@ func (r *Repo) GetPrimaryIndex(ctx context.Context) (Index, error) {
 	if err != nil {
 		return Index{}, err
 	}
-	zap.L().Debug("Metadata for scan result", zap.Any("ResultMetadata", output.ResultMetadata))
 	return getIndexFromSchema(output.Table.KeySchema), nil
 }
 
