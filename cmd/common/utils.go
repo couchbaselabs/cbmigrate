@@ -159,7 +159,12 @@ func ParesCouchbaseOptions(cmd *cobra.Command, collection string) (*option.Optio
 	}
 
 	cbopts.GeneratedKey, _ = cmd.Flags().GetString(CBGenerateKey)
-
+	cbopts.HashDocumentKey, _ = cmd.Flags().GetString(HashDocumentKey)
+	if cmd.Flags().Changed(HashDocumentKey) {
+		if err = ValueMustBeOneOf(cbopts.HashDocumentKey, hashDocumentKey.Values); err != nil {
+			return nil, err
+		}
+	}
 	cbopts.BatchSize, _ = cmd.Flags().GetInt(CBBatchSize)
 	return cbopts, nil
 }
@@ -174,4 +179,13 @@ func CouchBaseMissingRequiredOptions(cmd *cobra.Command) []string {
 		missingRequiredOptions = append(missingRequiredOptions, CBScope)
 	}
 	return missingRequiredOptions
+}
+
+func ValueMustBeOneOf(value string, enum []string) error {
+	for _, enumValue := range enum {
+		if value == enumValue {
+			return nil
+		}
+	}
+	return fmt.Errorf("value %s must be one of %v", value, enum)
 }

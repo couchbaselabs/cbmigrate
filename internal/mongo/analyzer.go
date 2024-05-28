@@ -90,7 +90,7 @@ func (a *IndexFieldAnalyzer) getIndexFieldPath() IndexFieldPath {
 		}
 		indexKeyAlias[field] = f
 	}
-	if k := a.dk.GetPrimaryKeyOnly(); k != "" {
+	if k := a.dk.GetNonCompoundPrimaryKeyOnly(); k != "" {
 		indexKeyAlias[k] = common.MetaDataID
 	}
 	return indexKeyAlias
@@ -107,7 +107,7 @@ func (a *IndexFieldAnalyzer) GetCouchbaseQuery(bucket, scope, collection string)
 		switch {
 		case mindex.Error != nil:
 			cindex.Error = mindex.Error
-		case len(mindex.Keys) == 1 && a.dk.GetPrimaryKeyOnly() == mindex.Keys[0].Field:
+		case len(mindex.Keys) == 1 && a.dk.GetNonCompoundPrimaryKeyOnly() == mindex.Keys[0].Field:
 			cindex.Query = fmt.Sprintf(
 				"CREATE PRIMARY INDEX `%s` on `%s`.`%s`.`%s` USING GSI WITH {\"defer_build\":true}",
 				mindex.Name, bucket, scope, collection)

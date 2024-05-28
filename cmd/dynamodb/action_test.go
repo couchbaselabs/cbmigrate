@@ -174,8 +174,5 @@ var _ = Describe("mongo", func() {
 			})
 
 		})
-
-		Context("failure", func() {
-		})
 	})
 })

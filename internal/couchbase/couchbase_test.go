@@ -1,6 +1,7 @@
 package couchbase_test
 
 import (
+	"fmt"
 	"github.com/couchbase/gocb/v2"
 	"github.com/couchbaselabs/cbmigrate/internal/common"
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase"
@@ -239,11 +240,13 @@ var _ = Describe("couchbase service", func() {
 			NameSpace: &cOpts.NameSpace{Bucket: "test_bucket", Scope: "test_scope", Collection: "test_col"},
 			BatchSize: 100,
 		}
+		var docKey common.ICBDocumentKey
 		BeforeEach(func() {
+			docKey = common.NewCBDocumentKey()
+			docKey.Set([]common.DocumentKeyPart{{Value: "id", Kind: common.DkField}})
 			ctrl = gomock.NewController(GinkgoT())
 			db = mock_test.NewMockCouchbaseIRepo(ctrl)
 			couchbaseService = couchbase.NewCouchbase(db)
-			db.EXPECT().Init(opts.Cluster, opts).Return(nil)
 			db.EXPECT().GetAllScopes().DoAndReturn(func() ([]gocb.ScopeSpec, error) {
 				return []gocb.ScopeSpec{
 					scopeSpec1,
@@ -269,7 +272,8 @@ var _ = Describe("couchbase service", func() {
 		})
 		Context("data processing success", func() {
 			It("upsert data when batch size is 100", func() {
-				err := couchbaseService.Init(opts, common.NewCBDocumentKey())
+				db.EXPECT().Init(opts.Cluster, opts).Return(nil)
+				err := couchbaseService.Init(opts, docKey)
 				Expect(err).To(BeNil())
 				i := 0
 				db.EXPECT().UpsertData(opts.Scope, opts.Collection, gomock.Any()).Times(5).DoAndReturn(func(scope, collection string, uDocs []gocb.BulkOp) error {
@@ -300,7 +304,8 @@ var _ = Describe("couchbase service", func() {
 						"k5":  "v5",
 					})
 				}
-				err := couchbaseService.Init(opts, common.NewCBDocumentKey())
+				db.EXPECT().Init(opts.Cluster, opts).Return(nil)
+				err := couchbaseService.Init(opts, docKey)
 				Expect(err).To(BeNil())
 				i := 0
 				db.EXPECT().UpsertData(opts.Scope, opts.Collection, gomock.Any()).Times(6).DoAndReturn(func(scope, collection string, uDocs []gocb.BulkOp) error {
@@ -312,6 +317,48 @@ var _ = Describe("couchbase service", func() {
 					}
 					return nil
 				})
+				for _, doc := range docs {
+					err = couchbaseService.ProcessData(doc)
+					Expect(err).To(BeNil())
+				}
+				err = couchbaseService.Complete()
+				Expect(err).To(BeNil())
+			})
+			It("upsert data when batch size is 100 and hash document key", func() {
+				copts := *opts
+				copts.HashDocumentKey = "sha256"
+				docKey.Set([]common.DocumentKeyPart{
+					{Value: "id", Kind: common.DkField},
+					{Value: "k1", Kind: common.DkField},
+				})
+				docsLen := len(docs)
+				for i := 0; i < 50; i++ {
+					docs = append(docs, map[string]interface{}{
+						"id": docsLen + i + 1,
+						"k1": "v1",
+						"k2": "v2",
+						"k3": "v3",
+						"k4": "v4",
+						"k5": "v5",
+					})
+				}
+				db.EXPECT().Init(copts.Cluster, &copts).Return(nil)
+				err := couchbaseService.Init(&copts, docKey)
+				Expect(err).To(BeNil())
+				i := 0
+				db.EXPECT().UpsertData(copts.Scope, copts.Collection, gomock.Any()).Times(6).DoAndReturn(
+					func(scope, collection string, uDocs []gocb.BulkOp) error {
+						for _, d := range uDocs {
+							if !reflect.DeepEqual(d.(*gocb.UpsertOp).Value, docs[i]) {
+								return errors.New("doc not equal")
+							}
+							if str, _ := couchbase.ComputeHash([]byte(fmt.Sprintf("%v::%v", docs[i]["id"], docs[i]["k1"])), copts.HashDocumentKey); str != d.(*gocb.UpsertOp).ID {
+								return errors.New("id not equal")
+							}
+							i++
+						}
+						return nil
+					})
 				for _, doc := range docs {
 					err = couchbaseService.ProcessData(doc)
 					Expect(err).To(BeNil())
@@ -333,7 +380,8 @@ var _ = Describe("couchbase service", func() {
 						"k5":  "v5",
 					})
 				}
-				err := couchbaseService.Init(opts, common.NewCBDocumentKey())
+				db.EXPECT().Init(opts.Cluster, opts).Return(nil)
+				err := couchbaseService.Init(opts, docKey)
 				Expect(err).To(BeNil())
 				processDataError := errors.New("error in processing the data")
 				db.EXPECT().UpsertData(opts.Scope, opts.Collection, gomock.Any()).Times(6).Return(processDataError)

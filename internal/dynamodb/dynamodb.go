@@ -78,18 +78,30 @@ func (d *DynamoDB) GetCouchbaseIndexesQuery(bucket string, scope string, collect
 	}
 	isPrimaryIndexPresent := false
 	var cbIndexes []common.Index
+	ncpk := d.documentKey.GetNonCompoundPrimaryKeyOnly()
 	for _, index := range indexes {
+
 		query := ""
 		switch {
-		case len(index.Keys) == 1 && d.documentKey.GetPrimaryKeyOnly() == index.Keys[0]:
+		case len(index.Keys) == 1 && d.documentKey.GetNonCompoundPrimaryKeyOnly() == index.Keys[0]:
 			query = fmt.Sprintf(
 				"CREATE PRIMARY INDEX `%s` on `%s`.`%s`.`%s` USING GSI WITH {\"defer_build\":true}",
 				index.Name, bucket, scope, collection)
 			isPrimaryIndexPresent = true
 		default:
+			keys := make([]string, len(index.Keys))
+			for i, k := range index.Keys {
+				// this condition is added to point the non-compound primary key to meta().id as the it will be removed
+				// in the document to avoid redundant information
+				if k == ncpk {
+					keys[i] = common.MetaDataID
+				} else {
+					keys[i] = k
+				}
+			}
 			query = fmt.Sprintf(
 				"CREATE INDEX `%s` on `%s`.`%s`.`%s` (`%s`) USING GSI WITH {\"defer_build\":true}",
-				index.Name, bucket, scope, collection, strings.Join(index.Keys, "`,`"))
+				index.Name, bucket, scope, collection, strings.Join(keys, "`,`"))
 
 		}
 		cbIndexes = append(cbIndexes, common.Index{

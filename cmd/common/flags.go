@@ -18,8 +18,9 @@ const (
 	CBCollection         = "cb-collection"
 	CBBatchSize          = "cb-batch-size"
 
-	CopyIndexes = "copy-indexes"
-	BufferSize  = "buffer-size"
+	CopyIndexes     = "copy-indexes"
+	BufferSize      = "buffer-size"
+	HashDocumentKey = "hash-document-key"
 )
 
 var cbCluster = &flag.StringFlag{
@@ -61,6 +62,12 @@ var cbClientKey = &flag.StringFlag{
 var cbClientKeyPassword = &flag.StringFlag{
 	Name:  CBClientKeyPassword,
 	Usage: "The password for the key provided to the --client-key flag, when using this flag, the key is expected to be in the PKCS#8 format.",
+}
+
+var hashDocumentKey = &flag.EnumFlag{
+	Name:   HashDocumentKey,
+	Usage:  "Hash the couchbase document key.",
+	Values: []string{"sha256", "sha512"},
 }
 
 func GetCBGenerateKeyOption(value string) flag.Flag {
@@ -152,6 +159,7 @@ func GetCBFlags() []flag.Flag {
 		cbScope,
 		cbCollection,
 		batchSize,
+		hashDocumentKey,
 		GetDebugFlag(),
 	}
 	return flags

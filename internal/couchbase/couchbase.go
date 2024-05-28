@@ -1,6 +1,9 @@
 package couchbase
 
 import (
+	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/couchbase/gocb/v2"
@@ -51,14 +54,15 @@ func getUUID() string {
 }
 
 type Couchbase struct {
-	db             repo.IRepo
-	bucket         string
-	scope          string
-	collection     string
-	batchSize      int
-	batchDocs      []gocb.BulkOp
-	key            common.ICBDocumentKey
-	processedCount int
+	db              repo.IRepo
+	bucket          string
+	scope           string
+	collection      string
+	batchSize       int
+	batchDocs       []gocb.BulkOp
+	key             common.ICBDocumentKey
+	HashDocumentKey string
+	processedCount  int
 }
 
 type DocKey struct {
@@ -78,6 +82,7 @@ func (c *Couchbase) Init(cbOpts *option.Options, documentKey common.ICBDocumentK
 	c.collection = cbOpts.Collection
 	c.batchSize = cbOpts.BatchSize
 	c.key = documentKey
+	c.HashDocumentKey = cbOpts.HashDocumentKey
 	// The check (only one key is used as a primary key) is needed to for index migration to use meta().ID instead of
 	// key while creating the index. Also, that key can be ignored while inserting the doc into couchbase
 	var keyParts []common.DocumentKeyPart
@@ -174,8 +179,16 @@ func (c *Couchbase) ProcessData(data map[string]interface{}) error {
 	if len(key) == 1 && key[0].Kind == common.DkField {
 		delete(data, key[0].Value)
 	}
+	docId := id.String()
+	if c.HashDocumentKey != "" {
+		var err error
+		docId, err = ComputeHash([]byte(id.String()), c.HashDocumentKey)
+		if err != nil {
+			return err
+		}
+	}
 	c.batchDocs = append(c.batchDocs, &gocb.UpsertOp{
-		ID:    id.String(),
+		ID:    docId,
 		Value: data,
 	})
 
@@ -191,6 +204,18 @@ func (c *Couchbase) ProcessData(data map[string]interface{}) error {
 		zap.S().Debugf("last processed document %v", id.String())
 	}
 	return nil
+}
+
+func ComputeHash(id []byte, algorithm string) (string, error) {
+	switch algorithm {
+	case "sha256":
+		sha := sha256.Sum256(id)
+		return hex.EncodeToString(sha[:]), nil
+	case "sha512":
+		sha := sha512.Sum512(id)
+		return hex.EncodeToString(sha[:]), nil
+	}
+	return "", fmt.Errorf("hash algorithm: %s not supported", algorithm)
 }
 
 func (c *Couchbase) Complete() (err error) {

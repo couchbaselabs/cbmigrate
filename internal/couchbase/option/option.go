@@ -5,8 +5,9 @@ type Options struct {
 	*Auth
 	*SSL
 	*NameSpace
-	GeneratedKey string
-	BatchSize    int
+	GeneratedKey    string
+	HashDocumentKey string
+	BatchSize       int
 }
 
 type Auth struct {
