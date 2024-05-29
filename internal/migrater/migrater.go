@@ -22,6 +22,9 @@ type Migrate[Options any] struct {
 func (m Migrate[Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIndexes bool, bufferSize int) error {
 
 	documentKey := common.NewCBDocumentKey()
+	if cbOpts.HashDocumentKey != "" {
+		documentKey.SetKeyHashed()
+	}
 	err := m.Source.Init(mOpts, documentKey)
 	if err != nil {
 		return err

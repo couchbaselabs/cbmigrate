@@ -176,7 +176,7 @@ func (c *Couchbase) ProcessData(data map[string]interface{}) error {
 			id.WriteString("::")
 		}
 	}
-	if len(key) == 1 && key[0].Kind == common.DkField {
+	if len(key) == 1 && key[0].Kind == common.DkField && c.HashDocumentKey == "" {
 		delete(data, key[0].Value)
 	}
 	docId := id.String()

@@ -16,6 +16,14 @@ var _ = Describe("couchbase service", func() {
 				Expect(docKey.GetKey()).To(Equal([]common.DocumentKeyPart{{Value: "id", Kind: common.DkField}}))
 				Expect(docKey.GetNonCompoundPrimaryKeyOnly()).To(Equal("id"))
 			})
+			It("with primary key and hash document key enabled", func() {
+				docKey := common.NewCBDocumentKey()
+				docKey.SetKeyHashed()
+				docKey.Set([]common.DocumentKeyPart{{Value: "id", Kind: common.DkField}})
+				Expect(docKey.IsSet()).To(Equal(true))
+				Expect(docKey.GetKey()).To(Equal([]common.DocumentKeyPart{{Value: "id", Kind: common.DkField}}))
+				Expect(docKey.GetNonCompoundPrimaryKeyOnly()).To(Equal(""))
+			})
 			It("with string prefix and primary key", func() {
 				docKey := common.NewCBDocumentKey()
 				docKey.Set([]common.DocumentKeyPart{{Value: "airline", Kind: common.DkString}, {Value: "id", Kind: common.DkField}})
