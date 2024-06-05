@@ -34,12 +34,12 @@ var dynamoDBProfile = &flag.StringFlag{
 
 var dynamoDBAccessKey = &flag.StringFlag{
 	Name:  DynamoDBAccessKey,
-	Usage: "AWS Access Key.",
+	Usage: "AWS Access Key ID.",
 }
 
 var dynamoDBSecretKey = &flag.StringFlag{
 	Name:  DynamoDBSecretKey,
-	Usage: "AWS Secret Key.",
+	Usage: "AWS Access Secret Key.",
 }
 
 var dynamoDBRegion = &flag.StringFlag{

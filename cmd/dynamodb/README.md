@@ -66,6 +66,8 @@ cbmigrate dynamodb --dynamodb-table-name da-test-2 --cb-cluster url --cb-usernam
 - `--dynamodb-table-name string`: The name of the table containing the requested item. You can also provide the Amazon Resource Name (ARN) of the table in this parameter.
 - `-h, --help`: Help for DynamoDB.
 
+## Note
+All AWS SDK environment configurations are supported. Click [here](https://docs.aws.amazon.com/sdkref/latest/guide/environment-variables.html) for more info.
 
 For more information about DynamoDB, refer to the following document
 - https://docs.aws.amazon.com/dynamodb
