@@ -31,6 +31,8 @@ var _ = Describe("mongo", func() {
 		dynamoDBTableNameOption := "--" + command.DynamoDBTableName
 		dynamoDBEndpointURLOption := "--" + command.DynamoDBEndpointURL
 		dynamoDBProfileOption := "--" + command.DynamoDBProfile
+		dynamoDBAccessKeyOption := "--" + command.DynamoDBAccessKey
+		dynamoDBSecretKeyOption := "--" + command.DynamoDBSecretKey
 		dynamoDBRegionOption := "--" + command.DynamoDBRegion
 		dynamoDBCaBundleOption := "--" + command.DynamoDBCaBundle
 		dynamoDBNoVerifySSLOption := "--" + command.DynamoDBNoVerifySSL
@@ -49,6 +51,8 @@ var _ = Describe("mongo", func() {
 		dynamoDBTableName := "test-table"
 		dynamoDBEndpointURL := "aws-endpoint"
 		dynamoDBProfile := "aws-profile"
+		dynamoDBAccessKey := "access-key"
+		dynamoDBSecretKey := "secret-key"
 		dynamoDBRegion := "us-east-1"
 		dynamoDBCaBundle := "path"
 
@@ -173,6 +177,98 @@ var _ = Describe("mongo", func() {
 				Expect(bufferSizeGot).To(Equal(bufferSize.Int()))
 			})
 
+			It("Input assertion case3", func() {
+
+				var dOptsGot *dOpts.Options
+				var cbOptsGot *option.Options
+				var copyIndexesGot bool
+				var bufferSizeGot int
+				migrate.EXPECT().Copy(gomock.Any(), gomock.Any(), true, bufferSize.Int()).DoAndReturn(func(dOpts *dOpts.Options, cbOpts *option.Options, copyIndexes bool, bufferSize int) error {
+					dOptsGot = dOpts
+					cbOptsGot = cbOpts
+					copyIndexesGot = copyIndexes
+					bufferSizeGot = bufferSize
+					return nil
+				})
+
+				_, err := common.ExecuteCommand(cmd, dynamoDBTableNameOption, dynamoDBTableName, dynamoDBAccessKeyOption,
+					dynamoDBAccessKey, dynamoDBSecretKeyOption, dynamoDBSecretKey,
+					cbClusterOption, cbCluster, cbUserOption, cbUser, cbPasswordOption, cbPassword,
+					cbBucketOption, cbBucket, cbCollectionOption, cbCollection, cbGeneratorKeyOption, cbGeneratorKey,
+					cbScopeOption, cbScope, cbBatchSizeOption, cbBatchSize.String(), bufferSizeOption, bufferSize.String())
+				Expect(err).To(BeNil())
+				expectedDopts := &dOpts.Options{
+					TableName: dynamoDBTableName,
+					AccessKey: dynamoDBAccessKey,
+					SecretKey: dynamoDBSecretKey,
+				}
+				expectedCbOpts := &option.Options{
+					Cluster: cbCluster,
+					Auth: &option.Auth{
+						Username: cbUser,
+						Password: cbPassword,
+					},
+					NameSpace: &option.NameSpace{
+						Bucket:     cbBucket,
+						Scope:      cbScope,
+						Collection: cbCollection,
+					},
+					SSL:          &option.SSL{},
+					GeneratedKey: "%id%",
+					BatchSize:    cbBatchSize.Int(),
+				}
+
+				Expect(dOptsGot).To(Equal(expectedDopts))
+				Expect(cbOptsGot).To(Equal(expectedCbOpts))
+				Expect(copyIndexesGot).To(Equal(true))
+				Expect(bufferSizeGot).To(Equal(bufferSize.Int()))
+			})
+		})
+		Context("failure", func() {
+			It("missing required flags", func() {
+				_, err := common.ExecuteCommand(cmd,
+					dynamoDBEndpointURLOption, dynamoDBEndpointURL, dynamoDBProfileOption, dynamoDBProfile,
+					dynamoDBRegionOption, dynamoDBRegion, dynamoDBCaBundleOption, dynamoDBCaBundle,
+					dynamoDBNoVerifySSLOption, cbClusterOption, cbCluster, cbUserOption, cbUser, cbPasswordOption,
+					cbPassword, cbBucketOption, cbBucket, cbScopeOption, cbScope)
+				Expect(err.Error()).To(Equal("required flag(s) \"dynamodb-table-name\" not set"))
+			})
+			It("exclusive error case 2", func() {
+				_, err := common.ExecuteCommand(cmd, dynamoDBTableNameOption, dynamoDBTableName,
+					dynamoDBProfileOption, dynamoDBProfile, dynamoDBSecretKeyOption, dynamoDBSecretKey,
+					dynamoDBEndpointURLOption, dynamoDBEndpointURL,
+					dynamoDBRegionOption, dynamoDBRegion, dynamoDBCaBundleOption, dynamoDBCaBundle,
+					dynamoDBNoVerifySSLOption, cbClusterOption, cbCluster, cbUserOption, cbUser, cbPasswordOption,
+					cbPassword, cbBucketOption, cbBucket, cbScopeOption, cbScope)
+				Expect(err.Error()).To(Equal("error: \"--aws-profile\" is mutually exclusive with \"--aws-access-key\",\"aws-secret-key\" flags"))
+			})
+			It("exclusive error case 2", func() {
+				_, err := common.ExecuteCommand(cmd, dynamoDBTableNameOption, dynamoDBTableName,
+					dynamoDBProfileOption, dynamoDBProfile, dynamoDBAccessKeyOption, dynamoDBAccessKey,
+					dynamoDBEndpointURLOption, dynamoDBEndpointURL,
+					dynamoDBRegionOption, dynamoDBRegion, dynamoDBCaBundleOption, dynamoDBCaBundle,
+					dynamoDBNoVerifySSLOption, cbClusterOption, cbCluster, cbUserOption, cbUser, cbPasswordOption,
+					cbPassword, cbBucketOption, cbBucket, cbScopeOption, cbScope)
+				Expect(err.Error()).To(Equal("error: \"--aws-profile\" is mutually exclusive with \"--aws-access-key\",\"aws-secret-key\" flags"))
+			})
+			It("must all error case 1", func() {
+				_, err := common.ExecuteCommand(cmd, dynamoDBTableNameOption, dynamoDBTableName,
+					dynamoDBAccessKeyOption, dynamoDBAccessKey,
+					dynamoDBEndpointURLOption, dynamoDBEndpointURL,
+					dynamoDBRegionOption, dynamoDBRegion, dynamoDBCaBundleOption, dynamoDBCaBundle,
+					dynamoDBNoVerifySSLOption, cbClusterOption, cbCluster, cbUserOption, cbUser, cbPasswordOption,
+					cbPassword, cbBucketOption, cbBucket, cbScopeOption, cbScope)
+				Expect(err.Error()).To(Equal("inconsistent flag usage. Flags aws-access-key, aws-secret-key must all be provided together or not at all. Missing: aws-secret-key"))
+			})
+			It("must all error case 2", func() {
+				_, err := common.ExecuteCommand(cmd, dynamoDBTableNameOption, dynamoDBTableName,
+					dynamoDBSecretKeyOption, dynamoDBSecretKey,
+					dynamoDBEndpointURLOption, dynamoDBEndpointURL,
+					dynamoDBRegionOption, dynamoDBRegion, dynamoDBCaBundleOption, dynamoDBCaBundle,
+					dynamoDBNoVerifySSLOption, cbClusterOption, cbCluster, cbUserOption, cbUser, cbPasswordOption,
+					cbPassword, cbBucketOption, cbBucket, cbScopeOption, cbScope)
+				Expect(err.Error()).To(Equal("inconsistent flag usage. Flags aws-access-key, aws-secret-key must all be provided together or not at all. Missing: aws-access-key"))
+			})
 		})
 	})
 })

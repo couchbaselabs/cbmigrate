@@ -5,6 +5,8 @@ type Options struct {
 	EndpointUrl string
 	NoSSLVerify bool
 	Profile     string
+	AccessKey   string
+	SecretKey   string
 	Region      string
 	CABundle    string
 }

@@ -10,6 +10,8 @@ const (
 	DynamoDBEndpointURL = "aws-endpoint-url"
 	DynamoDBNoVerifySSL = "aws-no-verify-ssl"
 	DynamoDBProfile     = "aws-profile"
+	DynamoDBAccessKey   = "aws-access-key-id"
+	DynamoDBSecretKey   = "aws-secret-access-key"
 	DynamoDBRegion      = "aws-region"
 	DynamoDBCaBundle    = "aws-ca-bundle"
 	DynamoDBTableName   = "dynamodb-table-name"
@@ -28,6 +30,16 @@ var dynamoDBNoVerifySSL = &flag.BoolFlag{
 var dynamoDBProfile = &flag.StringFlag{
 	Name:  DynamoDBProfile,
 	Usage: "Use a specific aws profile from your credential file.",
+}
+
+var dynamoDBAccessKey = &flag.StringFlag{
+	Name:  DynamoDBAccessKey,
+	Usage: "AWS Access Key.",
+}
+
+var dynamoDBSecretKey = &flag.StringFlag{
+	Name:  DynamoDBSecretKey,
+	Usage: "AWS Secret Key.",
 }
 
 var dynamoDBRegion = &flag.StringFlag{
@@ -52,7 +64,17 @@ func NewCommand() *cobra.Command {
 	//long := `cbmigrate dynamodb is a CLI tool for Couchbase that enables users to convert time series data in CSV to the format required by Couchbase.`
 	flags := []flag.Flag{
 		dynamoDBTableName,
-		dynamoDBProfile,
+		&flag.CompositeFlag{
+			Flags: []flag.Flag{
+				dynamoDBProfile,
+				&flag.CompositeFlag{
+					Flags: []flag.Flag{
+						dynamoDBAccessKey,
+						dynamoDBSecretKey,
+					},
+				},
+			},
+		},
 		dynamoDBRegion,
 		dynamoDBEndpointURL,
 		dynamoDBNoVerifySSL,

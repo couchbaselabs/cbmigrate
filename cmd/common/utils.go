@@ -37,6 +37,19 @@ func ValidateMustAllOrNotFlag(cmd *cobra.Command, flags ...string) error {
 	return nil
 }
 
+// ValidateFlagExclusive checks if primaryFlag is set to true, then no other flags in otherFlags should be true.
+func ValidateFlagExclusive(cmd *cobra.Command, primaryFlag string, otherFlags ...string) error {
+	if cmd.Flags().Changed(primaryFlag) {
+		for _, flag := range otherFlags {
+			if cmd.Flags().Changed(flag) {
+				return fmt.Errorf("error: \"--%s\" is mutually exclusive with \"--%s\" flags", primaryFlag,
+					strings.Join(otherFlags, "\",\""))
+			}
+		}
+	}
+	return nil
+}
+
 func CopyMap[T1 comparable, T2 any](m map[T1]T2) map[T1]T2 {
 	newMap := make(map[T1]T2)
 	for k, v := range m {

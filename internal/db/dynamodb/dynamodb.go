@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsHTTP "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/couchbaselabs/cbmigrate/internal/dynamodb/option"
 	"net/http"
@@ -24,13 +25,17 @@ func (d *DB) Init(opts *option.Options) error {
 	// credentials, and shared configuration files
 
 	var awsOpts []func(*config.LoadOptions) error
-	switch {
-	case opts.Region != "":
+	if opts.Region != "" {
 		awsOpts = append(awsOpts, config.WithRegion(opts.Region))
-		fallthrough
-	case opts.Profile != "":
+	}
+	if opts.Profile != "" {
 		awsOpts = append(awsOpts, config.WithSharedConfigProfile(opts.Profile))
-	case opts.CABundle != "":
+	}
+	if opts.AccessKey != "" {
+		awsOpts = append(awsOpts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			opts.AccessKey, opts.SecretKey, "")))
+	}
+	if opts.CABundle != "" {
 		caCert, err := os.ReadFile(opts.CABundle)
 		if err != nil {
 			panic(fmt.Errorf("unable to load CA bundle: %w", err))
@@ -44,22 +49,18 @@ func (d *DB) Init(opts *option.Options) error {
 		})
 		awsOpts = append(awsOpts, config.WithHTTPClient(httpClient))
 	}
-
 	cfg, err := config.LoadDefaultConfig(context.TODO(), awsOpts...)
 	if err != nil {
 		return fmt.Errorf("err: %w", err)
 	}
 	// Using the Config value, create the DynamoDB client
 	d.Client = dynamodb.NewFromConfig(cfg, func(options *dynamodb.Options) {
-
-		switch {
-		case opts.EndpointUrl != "":
+		if opts.EndpointUrl != "" {
 			options.BaseEndpoint = aws.String(opts.EndpointUrl)
-			fallthrough
-		case opts.NoSSLVerify:
+		}
+		if opts.NoSSLVerify {
 			options.EndpointOptions.DisableHTTPS = true
 		}
-
 	})
 	return nil
 }
