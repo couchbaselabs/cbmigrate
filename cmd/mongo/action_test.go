@@ -7,7 +7,7 @@ import (
 	"github.com/couchbaselabs/cbmigrate/cmd/mongo/command"
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
 	mOpts "github.com/couchbaselabs/cbmigrate/internal/mongo/option"
-	mock_test "github.com/couchbaselabs/cbmigrate/testhelper/mock"
+	mocktest "github.com/couchbaselabs/cbmigrate/testhelper/mock"
 	"github.com/spf13/cobra"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap/zapcore"
@@ -55,13 +55,13 @@ var _ = Describe("mongo", func() {
 		bufferSize := Integer(20000)
 		var (
 			ctrl    *gomock.Controller
-			migrate *mock_test.MockIMigrate[mOpts.Options]
+			migrate *mocktest.MockIMigrate[mOpts.Options]
 			cmd     *cobra.Command
 			action  *mongo.Action
 		)
 		BeforeEach(func() {
 			ctrl = gomock.NewController(GinkgoT())
-			migrate = mock_test.NewMockIMigrate[mOpts.Options](ctrl)
+			migrate = mocktest.NewMockIMigrate[mOpts.Options](ctrl)
 			action = &mongo.Action{Migrate: migrate}
 			cmd = command.NewCommand()
 			cmd.RunE = action.RunE
@@ -97,10 +97,11 @@ var _ = Describe("mongo", func() {
 						Collection: mongodbCollection,
 						DB:         mongodbDb,
 					},
-					Connection: &mOpts.Connection{},
-					SSL:        &mOpts.SSL{UseSSL: true},
-					Auth:       &mOpts.Auth{},
-					Kerberos:   &mOpts.Kerberos{},
+					Connection:  &mOpts.Connection{},
+					SSL:         &mOpts.SSL{UseSSL: true},
+					Auth:        &mOpts.Auth{},
+					Kerberos:    &mOpts.Kerberos{},
+					CopyIndexes: true,
 				}
 				expectedCbOpts := &option.Options{
 					Cluster: cbCluster,
@@ -152,10 +153,11 @@ var _ = Describe("mongo", func() {
 						Collection: mongodbCollection,
 						DB:         mongodbDb,
 					},
-					Connection: &mOpts.Connection{},
-					SSL:        &mOpts.SSL{UseSSL: true},
-					Auth:       &mOpts.Auth{},
-					Kerberos:   &mOpts.Kerberos{},
+					Connection:  &mOpts.Connection{},
+					SSL:         &mOpts.SSL{UseSSL: true},
+					Auth:        &mOpts.Auth{},
+					Kerberos:    &mOpts.Kerberos{},
+					CopyIndexes: true,
 				}
 				expectedCbOpts := &option.Options{
 					Cluster: cbCluster,

@@ -12,6 +12,7 @@ type Command string
 
 const (
 	Mongo     = "mongo"
+	DynamoDB  = "dynamodb"
 	CBMigrate = "cbmigrate"
 )
 
@@ -93,6 +94,15 @@ func NewCommand(name Command, alias []string, examples []Example, short string, 
 				flagSet = cmd.PersistentFlags()
 			}
 			flagSet.StringSliceP(f.Name, f.Alias, f.Value, f.Usage)
+		case *flag.EnumFlag:
+			if f.IsPersistentFlag() {
+				flagSet = cmd.PersistentFlags()
+			}
+			usage := f.Usage
+			if len(f.Values) > 0 {
+				usage = usage + " One of " + strings.Join(f.Values, ",")
+			}
+			flagSet.StringP(f.Name, f.Alias, f.DefaultValue, usage)
 		case *flag.BoolFlag:
 			if f.IsPersistentFlag() {
 				flagSet = cmd.PersistentFlags()

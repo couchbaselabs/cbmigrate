@@ -37,6 +37,19 @@ func ValidateMustAllOrNotFlag(cmd *cobra.Command, flags ...string) error {
 	return nil
 }
 
+// ValidateFlagExclusive checks if primaryFlag is set to true, then no other flags in otherFlags should be true.
+func ValidateFlagExclusive(cmd *cobra.Command, primaryFlag string, otherFlags ...string) error {
+	if cmd.Flags().Changed(primaryFlag) {
+		for _, flag := range otherFlags {
+			if cmd.Flags().Changed(flag) {
+				return fmt.Errorf("error: \"--%s\" is mutually exclusive with \"--%s\" flags", primaryFlag,
+					strings.Join(otherFlags, "\",\""))
+			}
+		}
+	}
+	return nil
+}
+
 func CopyMap[T1 comparable, T2 any](m map[T1]T2) map[T1]T2 {
 	newMap := make(map[T1]T2)
 	for k, v := range m {
@@ -159,7 +172,12 @@ func ParesCouchbaseOptions(cmd *cobra.Command, collection string) (*option.Optio
 	}
 
 	cbopts.GeneratedKey, _ = cmd.Flags().GetString(CBGenerateKey)
-
+	cbopts.HashDocumentKey, _ = cmd.Flags().GetString(HashDocumentKey)
+	if cmd.Flags().Changed(HashDocumentKey) {
+		if err = ValueMustBeOneOf(cbopts.HashDocumentKey, hashDocumentKey.Values); err != nil {
+			return nil, err
+		}
+	}
 	cbopts.BatchSize, _ = cmd.Flags().GetInt(CBBatchSize)
 	return cbopts, nil
 }
@@ -174,4 +192,13 @@ func CouchBaseMissingRequiredOptions(cmd *cobra.Command) []string {
 		missingRequiredOptions = append(missingRequiredOptions, CBScope)
 	}
 	return missingRequiredOptions
+}
+
+func ValueMustBeOneOf(value string, enum []string) error {
+	for _, enumValue := range enum {
+		if value == enumValue {
+			return nil
+		}
+	}
+	return fmt.Errorf("value %s must be one of %v", value, enum)
 }

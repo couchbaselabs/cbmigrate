@@ -193,6 +193,7 @@ func NewCommand() *cobra.Command {
 		mongoDBReadPreference,
 	}
 	flags = append(flags, common.GetCBFlags()...)
+	flags = append(flags, common.GetCBGenerateKeyOption("%_id%"))
 	flags = append(flags, common.GetCommonFlags()...)
 	examples := []common.Example{
 		{
@@ -206,6 +207,10 @@ func NewCommand() *cobra.Command {
 		{
 			Value: "cbmigrate mongo --mongodb-uri uri --mongodb-database db-name --mongodb-collection collection-name --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name --cb-collection collection-name --cb-generate-key key::#UUID#",
 			Usage: "Imports the data from mongo to couchbase.",
+		},
+		{
+			Value: "cbmigrate mongo --mongodb-uri uri --mongodb-database db-name --mongodb-collection collection-name --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name --cb-generate-key key::%firstname%::%lastname% --hash-document-key sha256",
+			Usage: "With hash document key option.",
 		},
 	}
 	usage := "Migrate data from MongoDB to Couchbase"

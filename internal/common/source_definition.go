@@ -5,8 +5,8 @@ import (
 	"context"
 )
 
-type ISource[Index any, Options any] interface {
-	Init(opts *Options) error
+type ISource[Options any] interface {
+	Init(opts *Options, documentKey ICBDocumentKey) error
 	StreamData(context.Context, chan map[string]interface{}) error
-	GetIndexes(ctx context.Context) ([]Index, error)
+	GetCouchbaseIndexesQuery(bucket string, scope string, collection string) ([]Index, error)
 }

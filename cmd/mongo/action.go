@@ -21,9 +21,8 @@ type Action struct {
 func NewAction() *Action {
 	return &Action{
 		Migrate: migrater.NewMigrator(
-			mongo.NewMongo(mRepo.NewRepo()),
+			mongo.NewMongo(mRepo.NewRepo(), mongo.NewIndexFieldAnalyzer()),
 			couchbase.NewCouchbase(cRepo.NewRepo()),
-			mongo.NewIndexFieldAnalyzer(),
 		),
 	}
 }
@@ -84,6 +83,7 @@ func (a *Action) RunE(cmd *cobra.Command, args []string) error {
 		cbOpts.GeneratedKey = " %_id%"
 	}
 	copyIndexes, _ := cmd.Flags().GetBool(common.CopyIndexes)
+	mopts.CopyIndexes = copyIndexes
 	bufferSize, _ := cmd.Flags().GetInt(common.BufferSize)
 	err = a.Migrate.Copy(mopts, cbOpts, copyIndexes, bufferSize)
 	if err != nil {

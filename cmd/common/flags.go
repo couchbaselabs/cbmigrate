@@ -18,8 +18,9 @@ const (
 	CBCollection         = "cb-collection"
 	CBBatchSize          = "cb-batch-size"
 
-	CopyIndexes = "copy-indexes"
-	BufferSize  = "buffer-size"
+	CopyIndexes     = "copy-indexes"
+	BufferSize      = "buffer-size"
+	HashDocumentKey = "hash-document-key"
 )
 
 var cbCluster = &flag.StringFlag{
@@ -63,12 +64,20 @@ var cbClientKeyPassword = &flag.StringFlag{
 	Usage: "The password for the key provided to the --client-key flag, when using this flag, the key is expected to be in the PKCS#8 format.",
 }
 
-var cbGenerateKey = &flag.StringFlag{
-	Name: CBGenerateKey,
-	Usage: "Specifies a key expression used for generating a key for each document imported." +
-		" This option allows for the creation of unique document keys in Couchbase by combining static text," +
-		" field values (denoted by %fieldname%), and custom generators (like #UUID#) in a format like \"key::%name%::#UUID#\"",
-	Value: "%_id%",
+var hashDocumentKey = &flag.EnumFlag{
+	Name:   HashDocumentKey,
+	Usage:  "Hash the couchbase document key.",
+	Values: []string{"sha256", "sha512"},
+}
+
+func GetCBGenerateKeyOption(value string) flag.Flag {
+	return &flag.StringFlag{
+		Name: CBGenerateKey,
+		Usage: "Specifies a key expression used for generating a key for each document imported." +
+			" This option allows for the creation of unique document keys in Couchbase by combining static text," +
+			" field values (denoted by %fieldname%), and custom generators (like #UUID#) in a format like \"key::%name%::#UUID#\"",
+		Value: value,
+	}
 }
 
 var cbCACert = &flag.StringFlag{
@@ -144,13 +153,13 @@ func GetCBFlags() []flag.Flag {
 			RequiredBrace: true,
 			Required:      true,
 		},
-		cbGenerateKey,
 		cbCACert,
 		cbNoSSLVerify,
 		cbBucket,
 		cbScope,
 		cbCollection,
 		batchSize,
+		hashDocumentKey,
 		GetDebugFlag(),
 	}
 	return flags

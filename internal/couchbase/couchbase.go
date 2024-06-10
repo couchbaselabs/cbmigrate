@@ -1,6 +1,9 @@
 package couchbase
 
 import (
+	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/couchbase/gocb/v2"
@@ -51,14 +54,15 @@ func getUUID() string {
 }
 
 type Couchbase struct {
-	db             repo.IRepo
-	bucket         string
-	scope          string
-	collection     string
-	batchSize      int
-	batchDocs      []gocb.BulkOp
-	key            []DocKey
-	processedCount int
+	db              repo.IRepo
+	bucket          string
+	scope           string
+	collection      string
+	batchSize       int
+	batchDocs       []gocb.BulkOp
+	key             common.ICBDocumentKey
+	HashDocumentKey string
+	processedCount  int
 }
 
 type DocKey struct {
@@ -72,44 +76,46 @@ func NewCouchbase(db repo.IRepo) common.IDestination {
 	}
 }
 
-func (c *Couchbase) Init(cbOpts *option.Options) (common.IDocumentKey, error) {
+func (c *Couchbase) Init(cbOpts *option.Options, documentKey common.ICBDocumentKey) error {
 	c.bucket = cbOpts.Bucket
 	c.scope = cbOpts.Scope
 	c.collection = cbOpts.Collection
 	c.batchSize = cbOpts.BatchSize
+	c.key = documentKey
+	c.HashDocumentKey = cbOpts.HashDocumentKey
 	// The check (only one key is used as a primary key) is needed to for index migration to use meta().ID instead of
-	// key while creating the index. Also, that key can be ignored in while inserting the doc into couchbase
-	dk := &common.DocumentKey{}
+	// key while creating the index. Also, that key can be ignored while inserting the doc into couchbase
+	var keyParts []common.DocumentKeyPart
 	if gk := cbOpts.GeneratedKey; gk != "" {
 		splitGK := strings.Split(gk, "::")
 		for _, k := range splitGK {
 			length := len(k)
-			var docKey DocKey
+			var keyPart common.DocumentKeyPart
 			switch {
 			case length > 1 && k[0] == '%' && k[length-1] == '%':
-				docKey.Kind = common.DkField
-				docKey.Value = k[1 : length-1]
+				keyPart.Kind = common.DkField
+				keyPart.Value = k[1 : length-1]
 			case length > 1 && k[0] == '#' && k[length-1] == '#':
 				switch k[1 : length-1] {
 				case string(common.DkUuid):
-					docKey.Kind = common.DkUuid
-					docKey.Value = k[1 : length-1]
+					keyPart.Kind = common.DkUuid
+					keyPart.Value = k[1 : length-1]
 				default:
-					return nil, fmt.Errorf("custom generator %s is not supported", k[1:length-1])
+					return fmt.Errorf("custom generator %s is not supported", k[1:length-1])
 				}
 			default:
-				docKey.Kind = common.DkString
-				docKey.Value = k
+				keyPart.Kind = common.DkString
+				keyPart.Value = k
 			}
-			c.key = append(c.key, docKey)
-			dk.Set(docKey.Kind, docKey.Value)
+			keyParts = append(keyParts, keyPart)
 		}
+		c.key.Set(keyParts)
 	}
 	err := c.db.Init(cbOpts.Cluster, cbOpts)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return dk, c.createScopeAndCollectionIFNotExits()
+	return c.createScopeAndCollectionIFNotExits()
 }
 
 func (c *Couchbase) createScopeAndCollectionIFNotExits() error {
@@ -153,8 +159,9 @@ l1:
 
 func (c *Couchbase) ProcessData(data map[string]interface{}) error {
 	var id strings.Builder
-	kLen := len(c.key)
-	for i, k := range c.key {
+	key := c.key.GetKey()
+	kLen := len(key)
+	for i, k := range key {
 		switch k.Kind {
 		case common.DkString:
 			id.WriteString(k.Value)
@@ -169,11 +176,19 @@ func (c *Couchbase) ProcessData(data map[string]interface{}) error {
 			id.WriteString("::")
 		}
 	}
-	if len(c.key) == 1 && c.key[0].Kind == common.DkField {
-		delete(data, c.key[0].Value)
+	if len(key) == 1 && key[0].Kind == common.DkField && c.HashDocumentKey == "" {
+		delete(data, key[0].Value)
+	}
+	docId := id.String()
+	if c.HashDocumentKey != "" {
+		var err error
+		docId, err = ComputeHash([]byte(id.String()), c.HashDocumentKey)
+		if err != nil {
+			return err
+		}
 	}
 	c.batchDocs = append(c.batchDocs, &gocb.UpsertOp{
-		ID:    id.String(),
+		ID:    docId,
 		Value: data,
 	})
 
@@ -189,6 +204,18 @@ func (c *Couchbase) ProcessData(data map[string]interface{}) error {
 		zap.S().Debugf("last processed document %v", id.String())
 	}
 	return nil
+}
+
+func ComputeHash(id []byte, algorithm string) (string, error) {
+	switch algorithm {
+	case "sha256":
+		sha := sha256.Sum256(id)
+		return hex.EncodeToString(sha[:]), nil
+	case "sha512":
+		sha := sha512.Sum512(id)
+		return hex.EncodeToString(sha[:]), nil
+	}
+	return "", fmt.Errorf("hash algorithm: %s not supported", algorithm)
 }
 
 func (c *Couchbase) Complete() (err error) {

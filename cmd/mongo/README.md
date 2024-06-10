@@ -9,12 +9,12 @@
 - SSL encryption support with optional verification.
 - Customizable document key generation.
 - Option to copy MongoDB indexes with considerations for specific types.
-- Verbose output for detailed operation logs.
+- Debug output for detailed operation logs.
 
 
 ## Usage:
 ```
-cbmigrate mongo --mongodb-uri MONGODB_URI --mongodb-collection MONGODB_COLLECTION --mongodb-database MONGODB_DATABASE --cb-cluster CB_CLUSTER (--cb-username CB_USERNAME --cb-password CB_PASSWORD | --cb-client-cert CB_CLIENT_CERT [--cb-client-cert-password CB_CLIENT_CERT_PASSWORD] [--cb-client-key CB_CLIENT_KEY] [--cb-client-key-password CB_CLIENT_KEY_PASSWORD]) [--cb-generate-key CB_GENERATE_KEY] [--cb-cacert CB_CACERT] [--cb-no-ssl-verify CB_NO_SSL_VERIFY] [--cb-bucket CB_BUCKET] [--cb-scope CB_SCOPE] [--cb-collection CB_COLLECTION] [--verbose] [--copy-indexes] [--help HELP]
+cbmigrate mongo --mongodb-uri MONGODB_URI --mongodb-collection MONGODB_COLLECTION --mongodb-database MONGODB_DATABASE --cb-cluster CB_CLUSTER (--cb-username CB_USERNAME --cb-password CB_PASSWORD | --cb-client-cert CB_CLIENT_CERT [--cb-client-cert-password CB_CLIENT_CERT_PASSWORD] [--cb-client-key CB_CLIENT_KEY] [--cb-client-key-password CB_CLIENT_KEY_PASSWORD]) [--cb-generate-key CB_GENERATE_KEY] [--cb-cacert CB_CACERT] [--cb-no-ssl-verify CB_NO_SSL_VERIFY] [--cb-bucket CB_BUCKET] [--cb-scope CB_SCOPE] [--cb-collection CB_COLLECTION] [--debug] [--copy-indexes] [--help HELP]
 ```
 
 ## Aliases:
@@ -22,17 +22,21 @@ cbmigrate mongo --mongodb-uri MONGODB_URI --mongodb-collection MONGODB_COLLECTIO
 
 ## Examples:
 - Importing data from MongoDB to Couchbase:
-  ```
+  ```sh
   cbmigrate mongo --mongodb-uri uri --mongodb-database db-name --mongodb-collection collection-name --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name
   ```
 - Using dot notation for nested fields:
-  ```
+  ```sh
   cbmigrate mongo --mongodb-uri uri --mongodb-database db-name --mongodb-collection collection-name --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name --cb-collection collection-name --cb-generate-key key::%name.first_name%::%name.last_name%
   ```
 - Generating keys with UUID:
-  ```
+  ```sh
   cbmigrate mongo --mongodb-uri uri --mongodb-database db-name --mongodb-collection collection-name --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name --cb-collection collection-name --cb-generate-key key::#UUID#
   ```
+- With hash document key option.
+  ```sh
+  cbmigrate mongo --mongodb-uri uri --mongodb-database db-name --mongodb-collection collection-name --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name --cb-generate-key key::%firstname%::%lastname% --hash-document-key sha256
+  ```  
 
 ## Flags:
 - `--buffer-size int`: Buffer size (default 10000).
@@ -162,7 +166,5 @@ For more information about Mongodb indexes, refer to the following docs
 For more information about Mongodb time series collections, refer to the following docs
 - https://www.mongodb.com/docs/manual/core/timeseries-collections/
 
-For more information about Couchbase indexes, refer to the following docs
-- https://docs.couchbase.com/server/current/learn/services-and-indexes/indexes/indexes.html
-- https://docs.couchbase.com/server/current/learn/services-and-indexes/indexes/global-secondary-indexes.html
-- https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/createindex.html
+For more information about Couchbase indexes, refer to the following document
+- https://docs.couchbase.com/home/index.html

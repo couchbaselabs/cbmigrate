@@ -1,9 +1,9 @@
-package common_test
+package mongo_test
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/couchbaselabs/cbmigrate/internal/common"
+	"github.com/couchbaselabs/cbmigrate/internal/mongo"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,7 +21,7 @@ var _ = Describe("index analyzer", func() {
 				if err != nil {
 					fmt.Println(err)
 				}
-				output, found := common.NavigatePath(indexKeyPath, data)
+				output, found := mongo.NavigatePath(indexKeyPath, data)
 				Expect(found).To(BeTrue())
 				Expect(output).To(Equal("k1[].n1k2[].n2k1[]"))
 			})
@@ -33,7 +33,7 @@ var _ = Describe("index analyzer", func() {
 				if err != nil {
 					fmt.Println(err)
 				}
-				output, found := common.NavigatePath(indexKeyPath, data)
+				output, found := mongo.NavigatePath(indexKeyPath, data)
 				Expect(found).To(BeTrue())
 				Expect(output).To(Equal("k1.n1k1[].n2k1.n3k1[].n4k1"))
 			})

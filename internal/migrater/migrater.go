@@ -14,48 +14,40 @@ type IMigrate[Options any] interface {
 	Copy(mOpts *Options, cbOpts *option.Options, copyIndexes bool, bufferSize int) error
 }
 
-type Migrate[T any, Options any] struct {
-	Source      common.ISource[T, Options]
-	Analyzer    common.Analyzer[T]
+type Migrate[Options any] struct {
+	Source      common.ISource[Options]
 	Destination common.IDestination
 }
 
-func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIndexes bool, bufferSize int) error {
+func (m Migrate[Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIndexes bool, bufferSize int) error {
 
-	err := m.Source.Init(mOpts)
+	documentKey := common.NewCBDocumentKey()
+	if cbOpts.HashDocumentKey != "" {
+		documentKey.SetKeyHashed()
+	}
+	err := m.Source.Init(mOpts, documentKey)
 	if err != nil {
 		return err
 	}
-	dk, err := m.Destination.Init(cbOpts)
+	err = m.Destination.Init(cbOpts, documentKey)
 	if err != nil {
 		return err
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	var indexes []T
-	if copyIndexes {
-		indexes, err = m.Source.GetIndexes(ctx)
-		if err != nil {
-			return err
-		}
-	}
-	m.Analyzer.Init(indexes, dk)
 
 	zap.S().Info("data migration started")
 	var mChan = make(chan map[string]interface{}, bufferSize)
 	g := errgroup.Group{}
 	var sErr, dErr error
 	g.Go(func() error {
+		// message channel should be closed properly inside stream data function using syntax:  close(mChan)
 		sErr = m.Source.StreamData(ctx, mChan)
-		close(mChan)
 		return nil
 	})
 	g.Go(func() error {
 		for data := range mChan {
-			if copyIndexes {
-				m.Analyzer.AnalyzeData(data)
-			}
 			dErr = m.Destination.ProcessData(data)
 			if dErr != nil {
 				cancel()
@@ -65,7 +57,7 @@ func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIn
 		dErr = m.Destination.Complete()
 		return nil
 	})
-	g.Wait()
+	_ = g.Wait()
 	if dErr != nil {
 		err = errors.Join(err, dErr)
 	}
@@ -76,10 +68,12 @@ func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIn
 		return err
 	}
 	zap.S().Info("data migration completed")
-
-	cbIndexes := m.Analyzer.GetCouchbaseQuery(cbOpts.Bucket, cbOpts.Scope, cbOpts.Collection)
 	if copyIndexes {
 		zap.S().Info("index migration started")
+		cbIndexes, err := m.Source.GetCouchbaseIndexesQuery(cbOpts.Bucket, cbOpts.Scope, cbOpts.Collection)
+		if err != nil {
+			return err
+		}
 		err = m.Destination.CreateIndexes(cbIndexes)
 		if err != nil {
 			return err
@@ -89,10 +83,9 @@ func (m Migrate[T, Options]) Copy(mOpts *Options, cbOpts *option.Options, copyIn
 	return err
 }
 
-func NewMigrator[T any, Options any](source common.ISource[T, Options], destination common.IDestination, analyzer common.Analyzer[T]) IMigrate[Options] {
-	return Migrate[T, Options]{
+func NewMigrator[Options any](source common.ISource[Options], destination common.IDestination) IMigrate[Options] {
+	return Migrate[Options]{
 		Source:      source,
 		Destination: destination,
-		Analyzer:    analyzer,
 	}
 }

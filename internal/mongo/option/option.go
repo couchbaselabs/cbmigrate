@@ -44,6 +44,8 @@ type Options struct {
 
 	// Query options
 	QueryOptions
+
+	CopyIndexes bool
 }
 
 // NormalizeOptionsAndURI syncs the connection string and toolOptions objects.
