@@ -14,7 +14,7 @@ This tool allows you to migrate data from a DynamoDB table to a Couchbase cluste
 ## Usage
 
 ```sh
-cbmigrate dynamodb --dynamodb-table-name DYNAMODB_TABLE_NAME [--aws-profile AWS_PROFILE] [--aws-region AWS_REGION] [--aws-endpoint-url AWS_ENDPOINT_URL] [--aws-no-verify-ssl] [--aws-ca-bundle AWS_CA_BUNDLE] --cb-cluster CB_CLUSTER (--cb-username CB_USERNAME --cb-password CB_PASSWORD | --cb-client-cert CB_CLIENT_CERT [--cb-client-cert-password CB_CLIENT_CERT_PASSWORD] [--cb-client-key CB_CLIENT_KEY] [--cb-client-key-password CB_CLIENT_KEY_PASSWORD]) [--cb-cacert CB_CACERT] [--cb-no-ssl-verify CB_NO_SSL_VERIFY] [--cb-bucket CB_BUCKET] [--cb-scope CB_SCOPE] [--cb-collection CB_COLLECTION] [--cb-batch-size CB_BATCH_SIZE] [--debug] [--cb-generate-key CB_GENERATE_KEY] [--copy-indexes] [--buffer-size BUFFER_SIZE] [--help HELP]
+cbmigrate dynamodb --dynamodb-table-name DYNAMODB_TABLE_NAME [[--aws-profile AWS_PROFILE] | [--aws-access-key-id AWS_ACCESS_KEY_ID --aws-secret-access-key AWS_SECRET_ACCESS_KEY]] [--aws-region AWS_REGION] [--aws-endpoint-url AWS_ENDPOINT_URL] [--aws-no-verify-ssl] [--aws-ca-bundle AWS_CA_BUNDLE] --cb-cluster CB_CLUSTER (--cb-username CB_USERNAME --cb-password CB_PASSWORD | --cb-client-cert CB_CLIENT_CERT [--cb-client-cert-password CB_CLIENT_CERT_PASSWORD] [--cb-client-key CB_CLIENT_KEY] [--cb-client-key-password CB_CLIENT_KEY_PASSWORD]) [--cb-cacert CB_CACERT] [--cb-no-ssl-verify CB_NO_SSL_VERIFY] [--cb-bucket CB_BUCKET] [--cb-scope CB_SCOPE] [--cb-collection CB_COLLECTION] [--cb-batch-size CB_BATCH_SIZE] [--hash-document-key sha256,sha512] [--debug] [--cb-generate-key CB_GENERATE_KEY] [--copy-indexes] [--buffer-size BUFFER_SIZE] [--help HELP]
 ```
 
 ## Aliases
@@ -31,7 +31,12 @@ cbmigrate dynamodb --dynamodb-table-name da-test-2 --cb-cluster url --cb-usernam
 
 - With aws profile and region and couchbase collection and generator key options.
 ```sh
-cbmigrate dynamodb --dynamodb-table-name da-test-2 --aws-profile aws-profile --aws-region aws-region --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name --cb-collection collection-name  --cb-generate-key key::#UUID#
+cbmigrate dynamodb --dynamodb-table-name da-test-2 --aws-profile aws-profile --aws-region aws-region --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name --cb-collection collection-name --cb-generate-key key::#UUID#
+```
+
+- With aws access key id and aws secret access key options.
+```sh
+cbmigrate dynamodb --dynamodb-table-name da-test-2 --aws-access-key-id aws-access-key-id --aws-secret-access-key aws-secret-access-key --aws-region aws-region --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name
 ```
 
 - With hash document key option.
@@ -41,11 +46,13 @@ cbmigrate dynamodb --dynamodb-table-name da-test-2 --cb-cluster url --cb-usernam
 
 ## Flags
 
+- `--aws-access-key-id string`: AWS Access Key ID.
 - `--aws-ca-bundle string`: The CA certificate bundle to use when verifying SSL certificates. Overrides config/env settings.
 - `--aws-endpoint-url string`: Override AWS’s default endpoint URL with the given URL.
 - `--aws-no-verify-ssl`: By default, the CLI uses SSL when communicating with AWS services. For each SSL connection, the CLI will verify SSL certificates. This option overrides the default behavior of verifying SSL certificates.
 - `--aws-profile string`: Use a specific AWS profile from your credential file.
 - `--aws-region string`: The region to use. Overrides config/env settings.
+- `--aws-secret-access-key string`: AWS Secret Access Key.
 - `--buffer-size int`: Buffer size (default 10000).
 - `--cb-batch-size int`: Batch size (default 200).
 - `--cb-bucket string`: The name of the Couchbase bucket.

@@ -33,13 +33,15 @@ var dynamoDBProfile = &flag.StringFlag{
 }
 
 var dynamoDBAccessKey = &flag.StringFlag{
-	Name:  DynamoDBAccessKey,
-	Usage: "AWS Access Key ID.",
+	Name:     DynamoDBAccessKey,
+	Usage:    "AWS Access Key ID.",
+	Required: true,
 }
 
 var dynamoDBSecretKey = &flag.StringFlag{
-	Name:  DynamoDBSecretKey,
-	Usage: "AWS Access Secret Key.",
+	Name:     DynamoDBSecretKey,
+	Usage:    "AWS Secret Access Key.",
+	Required: true,
 }
 
 var dynamoDBRegion = &flag.StringFlag{
@@ -74,6 +76,7 @@ func NewCommand() *cobra.Command {
 					},
 				},
 			},
+			Type: flag.RelationshipOR,
 		},
 		dynamoDBRegion,
 		dynamoDBEndpointURL,
@@ -91,6 +94,10 @@ func NewCommand() *cobra.Command {
 		{
 			Value: "cbmigrate dynamodb --dynamodb-table-name da-test-2 --aws-profile aws-profile --aws-region aws-region --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name --cb-collection collection-name --cb-generate-key key::#UUID#",
 			Usage: "With aws profile and region and couchbase collection and generator key options.",
+		},
+		{
+			Value: "cbmigrate dynamodb --dynamodb-table-name da-test-2 --aws-access-key-id aws-access-key-id --aws-secret-access-key aws-secret-access-key --aws-region aws-region --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name",
+			Usage: "With aws access key id and aws secret access key options.",
 		},
 		{
 			Value: "cbmigrate dynamodb --dynamodb-table-name da-test-2 --cb-cluster url --cb-username username --cb-password password --cb-bucket bucket-name --cb-scope scope-name --cb-collection collection-name --cb-generate-key key::%firstname%::%lastname% --hash-document-key sha256",
