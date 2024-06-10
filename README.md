@@ -8,7 +8,7 @@ Currently, cbmigrate supports migrating data from the following source database:
 
   For MongoDB migration, cbmigrate provides a specific subcommand. For detailed information on how to use this subcommand, including available options and examples, please refer to the [MongoDB subcommand README](cmd/mongo/README.md).
 
-- **MongoDB**
+- **DynamoDB**
 
   For DynamoDB migration, cbmigrate provides a specific subcommand. For detailed information on how to use this subcommand, including available options and examples, please refer to the [Dynamodb subcommand README](cmd/dynamodb/README.md).
 
