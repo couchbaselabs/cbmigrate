@@ -8,6 +8,10 @@ Currently, cbmigrate supports migrating data from the following source database:
 
   For MongoDB migration, cbmigrate provides a specific subcommand. For detailed information on how to use this subcommand, including available options and examples, please refer to the [MongoDB subcommand README](cmd/mongo/README.md).
 
+- **DynamoDB**
+
+  For DynamoDB migration, cbmigrate provides a specific subcommand. For detailed information on how to use this subcommand, including available options and examples, please refer to the [Dynamodb subcommand README](cmd/dynamodb/README.md).
+
 ## Usage
 ```
 cbmigrate [--version] [--help HELP]
@@ -15,7 +19,8 @@ cbmigrate [command]
 ```
 
 ### Available Commands
-- `help` - Displays help information about any command.
+- `dynamodb` - Migrate data from DynamoDB to Couchbase
+- `help` - Displays help information about any command
 - `mongo` - Migrate data from MongoDB to Couchbase
 
 ### Flags
