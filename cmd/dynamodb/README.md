@@ -14,7 +14,7 @@ This tool allows you to migrate data from a DynamoDB table to a Couchbase cluste
 ## Usage
 
 ```sh
-cbmigrate dynamodb --dynamodb-table-name DYNAMODB_TABLE_NAME [[--aws-profile AWS_PROFILE] | [--aws-access-key-id AWS_ACCESS_KEY_ID --aws-secret-access-key AWS_SECRET_ACCESS_KEY]] [--aws-region AWS_REGION] [--aws-endpoint-url AWS_ENDPOINT_URL] [--aws-no-verify-ssl] [--aws-ca-bundle AWS_CA_BUNDLE] --cb-cluster CB_CLUSTER (--cb-username CB_USERNAME --cb-password CB_PASSWORD | --cb-client-cert CB_CLIENT_CERT [--cb-client-cert-password CB_CLIENT_CERT_PASSWORD] [--cb-client-key CB_CLIENT_KEY] [--cb-client-key-password CB_CLIENT_KEY_PASSWORD]) [--cb-cacert CB_CACERT] [--cb-no-ssl-verify CB_NO_SSL_VERIFY] [--cb-bucket CB_BUCKET] [--cb-scope CB_SCOPE] [--cb-collection CB_COLLECTION] [--cb-batch-size CB_BATCH_SIZE] [--hash-document-key sha256,sha512] [--debug] [--cb-generate-key CB_GENERATE_KEY] [--copy-indexes] [--buffer-size BUFFER_SIZE] [--help HELP]
+cbmigrate dynamodb --dynamodb-table-name DYNAMODB_TABLE_NAME [[--aws-profile AWS_PROFILE] | [--aws-access-key-id AWS_ACCESS_KEY_ID --aws-secret-access-key AWS_SECRET_ACCESS_KEY]] [--aws-region AWS_REGION] [--aws-endpoint-url AWS_ENDPOINT_URL] [--aws-no-verify-ssl] [--aws-ca-bundle AWS_CA_BUNDLE] --cb-cluster CB_CLUSTER (--cb-username CB_USERNAME --cb-password CB_PASSWORD | --cb-client-cert CB_CLIENT_CERT [--cb-client-cert-password CB_CLIENT_CERT_PASSWORD] [--cb-client-key CB_CLIENT_KEY] [--cb-client-key-password CB_CLIENT_KEY_PASSWORD]) [--cb-cacert CB_CACERT] [--cb-no-ssl-verify] [--cb-bucket CB_BUCKET] [--cb-scope CB_SCOPE] [--cb-collection CB_COLLECTION] [--cb-batch-size CB_BATCH_SIZE] [--hash-document-key sha256,sha512] [--debug] [--cb-generate-key CB_GENERATE_KEY] [--copy-indexes] [--buffer-size BUFFER_SIZE] [--help HELP]
 ```
 
 ## Aliases
@@ -64,7 +64,7 @@ cbmigrate dynamodb --dynamodb-table-name da-test-2 --cb-cluster url --cb-usernam
 - `--cb-cluster string`: The hostname of a node in the cluster to import data into.
 - `--cb-collection string`: The name of the collection where the data needs to be imported. If the collection does not exist, it will be created.
 - `--cb-generate-key string`: Specifies a key expression used for generating a key for each document imported. This option allows for the creation of unique document keys in Couchbase by combining static text, field values (denoted by `%fieldname%`), and custom generators (like `#UUID#`) in a format like `"key::%name%::#UUID#"`
-- `--cb-no-ssl-verify string`: Skips the SSL verification phase. Specifying this flag will allow a connection using SSL encryption but will not verify the identity of the server you connect to. You are vulnerable to a man-in-the-middle attack if you use this flag. Either this flag or the `--cacert` flag must be specified when using an SSL encrypted connection.
+- `--cb-no-ssl-verify`: Skips the SSL verification phase. Specifying this flag will allow a connection using SSL encryption but will not verify the identity of the server you connect to. You are vulnerable to a man-in-the-middle attack if you use this flag. Either this flag or the `--cacert` flag must be specified when using an SSL encrypted connection.
 - `--cb-password string`: The password for cluster authentication.
 - `--cb-scope string`: The name of the scope in which the collection resides. If the scope does not exist, it will be created.
 - `--cb-username string`: The username for cluster authentication.
@@ -72,6 +72,7 @@ cbmigrate dynamodb --dynamodb-table-name da-test-2 --cb-cluster url --cb-usernam
 - `--debug`: Enable debug output.
 - `--dynamodb-table-name string`: The name of the table containing the requested item. You can also provide the Amazon Resource Name (ARN) of the table in this parameter.
 - `-h, --help`: Help for DynamoDB.
+- `--hash-document-key string`: Hash the couchbase document key. One of sha256,sha512
 
 ## Note
 All AWS SDK environment configurations are supported. Click [here](https://docs.aws.amazon.com/sdkref/latest/guide/environment-variables.html) for more info.
