@@ -86,7 +86,7 @@ var cbCACert = &flag.StringFlag{
 		"Either this flag or the --no-ssl-verify flag must be specified when using an SSL encrypted connection.",
 }
 
-var cbNoSSLVerify = &flag.StringFlag{
+var cbNoSSLVerify = &flag.BoolFlag{
 	Name: CBNoSSLVerify,
 	Usage: "Skips the SSL verification phase. Specifying this flag will allow a connection using SSL encryption, " +
 		"but will not verify the identity of the server you connect to. " +
