@@ -14,7 +14,7 @@
 
 ## Usage:
 ```
-cbmigrate mongo --mongodb-uri MONGODB_URI --mongodb-collection MONGODB_COLLECTION --mongodb-database MONGODB_DATABASE --cb-cluster CB_CLUSTER (--cb-username CB_USERNAME --cb-password CB_PASSWORD | --cb-client-cert CB_CLIENT_CERT [--cb-client-cert-password CB_CLIENT_CERT_PASSWORD] [--cb-client-key CB_CLIENT_KEY] [--cb-client-key-password CB_CLIENT_KEY_PASSWORD]) [--cb-generate-key CB_GENERATE_KEY] [--cb-cacert CB_CACERT] [--cb-no-ssl-verify CB_NO_SSL_VERIFY] [--cb-bucket CB_BUCKET] [--cb-scope CB_SCOPE] [--cb-collection CB_COLLECTION] [--debug] [--copy-indexes] [--help HELP]
+cbmigrate mongo --mongodb-uri MONGODB_URI --mongodb-collection MONGODB_COLLECTION --mongodb-database MONGODB_DATABASE --cb-cluster CB_CLUSTER (--cb-username CB_USERNAME --cb-password CB_PASSWORD | --cb-client-cert CB_CLIENT_CERT [--cb-client-cert-password CB_CLIENT_CERT_PASSWORD] [--cb-client-key CB_CLIENT_KEY] [--cb-client-key-password CB_CLIENT_KEY_PASSWORD]) [--cb-cacert CB_CACERT] [--cb-no-ssl-verify] [--cb-bucket CB_BUCKET] [--cb-scope CB_SCOPE] [--cb-collection CB_COLLECTION] [--cb-batch-size CB_BATCH_SIZE] [--hash-document-key sha256,sha512] [--debug] [--cb-generate-key CB_GENERATE_KEY] [--copy-indexes] [--buffer-size BUFFER_SIZE] [--help HELP]
 ```
 
 ## Aliases:
@@ -54,7 +54,8 @@ cbmigrate mongo --mongodb-uri MONGODB_URI --mongodb-collection MONGODB_COLLECTIO
 - `--cb-password string`: The password for cluster authentication.
 - `--cb-scope string`: The name of the scope in which the collection resides. If the scope does not exist, it will be created.
 - `--cb-username string`: The username for cluster authentication.
-- `--copy-indexes`:Copy indexes for the collection (default true).
+- `--copy-indexes`: Copy indexes for the collection (default true).
+- `--hash-document-key string`: Hash the couchbase document key. One of sha256,sha512
 - `--help`: help for mongo
 - `--mongodb-collection string`: MongoDB collection to use.
 - `--mongodb-database string`: MongoDB database to use.
