@@ -240,7 +240,7 @@ var _ = Describe("mongo", func() {
 					dynamoDBRegionOption, dynamoDBRegion, dynamoDBCaBundleOption, dynamoDBCaBundle,
 					dynamoDBNoVerifySSLOption, cbClusterOption, cbCluster, cbUserOption, cbUser, cbPasswordOption,
 					cbPassword, cbBucketOption, cbBucket, cbScopeOption, cbScope)
-				Expect(err.Error()).To(Equal("error: \"--aws-profile\" is mutually exclusive with \"--aws-access-key\",\"aws-secret-key\" flags"))
+				Expect(err.Error()).To(Equal("error: \"--aws-profile\" is mutually exclusive with \"--aws-access-key-id\",\"aws-secret-access-key\" flags"))
 			})
 			It("exclusive error case 2", func() {
 				_, err := common.ExecuteCommand(cmd, dynamoDBTableNameOption, dynamoDBTableName,
@@ -249,7 +249,7 @@ var _ = Describe("mongo", func() {
 					dynamoDBRegionOption, dynamoDBRegion, dynamoDBCaBundleOption, dynamoDBCaBundle,
 					dynamoDBNoVerifySSLOption, cbClusterOption, cbCluster, cbUserOption, cbUser, cbPasswordOption,
 					cbPassword, cbBucketOption, cbBucket, cbScopeOption, cbScope)
-				Expect(err.Error()).To(Equal("error: \"--aws-profile\" is mutually exclusive with \"--aws-access-key\",\"aws-secret-key\" flags"))
+				Expect(err.Error()).To(Equal("error: \"--aws-profile\" is mutually exclusive with \"--aws-access-key-id\",\"aws-secret-access-key\" flags"))
 			})
 			It("must all error case 1", func() {
 				_, err := common.ExecuteCommand(cmd, dynamoDBTableNameOption, dynamoDBTableName,
@@ -258,7 +258,7 @@ var _ = Describe("mongo", func() {
 					dynamoDBRegionOption, dynamoDBRegion, dynamoDBCaBundleOption, dynamoDBCaBundle,
 					dynamoDBNoVerifySSLOption, cbClusterOption, cbCluster, cbUserOption, cbUser, cbPasswordOption,
 					cbPassword, cbBucketOption, cbBucket, cbScopeOption, cbScope)
-				Expect(err.Error()).To(Equal("inconsistent flag usage. Flags aws-access-key, aws-secret-key must all be provided together or not at all. Missing: aws-secret-key"))
+				Expect(err.Error()).To(Equal("inconsistent flag usage. Flags aws-access-key-id, aws-secret-access-key must all be provided together or not at all. Missing: aws-secret-access-key"))
 			})
 			It("must all error case 2", func() {
 				_, err := common.ExecuteCommand(cmd, dynamoDBTableNameOption, dynamoDBTableName,
@@ -267,7 +267,7 @@ var _ = Describe("mongo", func() {
 					dynamoDBRegionOption, dynamoDBRegion, dynamoDBCaBundleOption, dynamoDBCaBundle,
 					dynamoDBNoVerifySSLOption, cbClusterOption, cbCluster, cbUserOption, cbUser, cbPasswordOption,
 					cbPassword, cbBucketOption, cbBucket, cbScopeOption, cbScope)
-				Expect(err.Error()).To(Equal("inconsistent flag usage. Flags aws-access-key, aws-secret-key must all be provided together or not at all. Missing: aws-access-key"))
+				Expect(err.Error()).To(Equal("inconsistent flag usage. Flags aws-access-key-id, aws-secret-access-key must all be provided together or not at all. Missing: aws-access-key-id"))
 			})
 		})
 	})
