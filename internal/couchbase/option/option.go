@@ -6,6 +6,7 @@ type Options struct {
 	*SSL
 	*NameSpace
 	GeneratedKey    string
+	KeepPrimaryKey  bool
 	HashDocumentKey string
 	BatchSize       int
 }

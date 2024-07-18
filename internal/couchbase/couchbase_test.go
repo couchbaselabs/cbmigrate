@@ -333,6 +333,46 @@ var _ = Describe("couchbase service", func() {
 				err = couchbaseService.Complete()
 				Expect(err).To(BeNil())
 			})
+			It("upsert data when batch size is 100 and call complete option and keep primary key", func() {
+				copts := *opts
+				copts.KeepPrimaryKey = true
+				docKey.Set([]common.DocumentKeyPart{
+					{Value: "id", Kind: common.DkField},
+				})
+				docsLen := len(docs)
+				for i := 0; i < 50; i++ {
+					docs = append(docs, map[string]interface{}{
+						"id": docsLen + i + 1,
+						"k1": "v1",
+						"k2": "v2",
+						"k3": "v3",
+						"k4": "v4",
+						"k5": "v5",
+					})
+				}
+				db.EXPECT().Init(copts.Cluster, &copts).Return(nil)
+				err := couchbaseService.Init(&copts, docKey)
+				Expect(err).To(BeNil())
+				i := 0
+				db.EXPECT().UpsertData(copts.Scope, copts.Collection, gomock.Any()).Times(6).DoAndReturn(func(scope, collection string, uDocs []gocb.BulkOp) error {
+					for _, d := range uDocs {
+						if !reflect.DeepEqual(d.(*gocb.UpsertOp).Value, docs[i]) {
+							return errors.New("doc not equal")
+						}
+						if _, ok := docs[i]["id"]; !ok {
+							return errors.New("id missing in the doc when hash document key enabled")
+						}
+						i++
+					}
+					return nil
+				})
+				for _, doc := range docs {
+					err = couchbaseService.ProcessData(doc)
+					Expect(err).To(BeNil())
+				}
+				err = couchbaseService.Complete()
+				Expect(err).To(BeNil())
+			})
 			It("upsert data when batch size is 100 and non compound primary key and hash document key", func() {
 				copts := *opts
 				copts.HashDocumentKey = "sha256"

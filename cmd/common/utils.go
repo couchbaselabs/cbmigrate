@@ -172,6 +172,7 @@ func ParesCouchbaseOptions(cmd *cobra.Command, collection string) (*option.Optio
 	}
 
 	cbopts.GeneratedKey, _ = cmd.Flags().GetString(CBGenerateKey)
+	cbopts.KeepPrimaryKey, _ = cmd.Flags().GetBool(KeepPrimaryKey)
 	cbopts.HashDocumentKey, _ = cmd.Flags().GetString(HashDocumentKey)
 	if cmd.Flags().Changed(HashDocumentKey) {
 		if err = ValueMustBeOneOf(cbopts.HashDocumentKey, hashDocumentKey.Values); err != nil {
