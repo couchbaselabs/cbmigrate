@@ -20,6 +20,7 @@ const (
 
 	CopyIndexes     = "copy-indexes"
 	BufferSize      = "buffer-size"
+	KeepPrimaryKey  = "keep-primary-key"
 	HashDocumentKey = "hash-document-key"
 )
 
@@ -62,6 +63,11 @@ var cbClientKey = &flag.StringFlag{
 var cbClientKeyPassword = &flag.StringFlag{
 	Name:  CBClientKeyPassword,
 	Usage: "The password for the key provided to the --client-key flag, when using this flag, the key is expected to be in the PKCS#8 format.",
+}
+
+var keepPrimaryKey = &flag.BoolFlag{
+	Name:  KeepPrimaryKey,
+	Usage: "Keep the non-composite primary key in the document. By default, if the key is a non-composite primary key, it is deleted from the document unless this flag is set.",
 }
 
 var hashDocumentKey = &flag.EnumFlag{
@@ -159,6 +165,7 @@ func GetCBFlags() []flag.Flag {
 		cbScope,
 		cbCollection,
 		batchSize,
+		keepPrimaryKey,
 		hashDocumentKey,
 		GetDebugFlag(),
 	}

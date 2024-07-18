@@ -61,6 +61,7 @@ type Couchbase struct {
 	batchSize       int
 	batchDocs       []gocb.BulkOp
 	key             common.ICBDocumentKey
+	keepPrimaryKey  bool
 	HashDocumentKey string
 	processedCount  int
 }
@@ -82,6 +83,7 @@ func (c *Couchbase) Init(cbOpts *option.Options, documentKey common.ICBDocumentK
 	c.collection = cbOpts.Collection
 	c.batchSize = cbOpts.BatchSize
 	c.key = documentKey
+	c.keepPrimaryKey = cbOpts.KeepPrimaryKey
 	c.HashDocumentKey = cbOpts.HashDocumentKey
 	// The check (only one key is used as a primary key) is needed to for index migration to use meta().ID instead of
 	// key while creating the index. Also, that key can be ignored while inserting the doc into couchbase
@@ -176,7 +178,7 @@ func (c *Couchbase) ProcessData(data map[string]interface{}) error {
 			id.WriteString("::")
 		}
 	}
-	if len(key) == 1 && key[0].Kind == common.DkField && c.HashDocumentKey == "" {
+	if len(key) == 1 && key[0].Kind == common.DkField && c.HashDocumentKey == "" && !c.keepPrimaryKey {
 		delete(data, key[0].Value)
 	}
 	docId := id.String()

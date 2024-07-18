@@ -14,7 +14,7 @@ This tool allows you to migrate data from a DynamoDB table to a Couchbase cluste
 ## Usage
 
 ```sh
-cbmigrate dynamodb --dynamodb-table-name DYNAMODB_TABLE_NAME [[--aws-profile AWS_PROFILE] | [--aws-access-key-id AWS_ACCESS_KEY_ID --aws-secret-access-key AWS_SECRET_ACCESS_KEY]] [--aws-region AWS_REGION] [--aws-endpoint-url AWS_ENDPOINT_URL] [--aws-no-verify-ssl] [--aws-ca-bundle AWS_CA_BUNDLE] --cb-cluster CB_CLUSTER (--cb-username CB_USERNAME --cb-password CB_PASSWORD | --cb-client-cert CB_CLIENT_CERT [--cb-client-cert-password CB_CLIENT_CERT_PASSWORD] [--cb-client-key CB_CLIENT_KEY] [--cb-client-key-password CB_CLIENT_KEY_PASSWORD]) [--cb-cacert CB_CACERT] [--cb-no-ssl-verify] [--cb-bucket CB_BUCKET] [--cb-scope CB_SCOPE] [--cb-collection CB_COLLECTION] [--cb-batch-size CB_BATCH_SIZE] [--hash-document-key sha256,sha512] [--debug] [--cb-generate-key CB_GENERATE_KEY] [--copy-indexes] [--buffer-size BUFFER_SIZE] [--help HELP]
+cbmigrate dynamodb --dynamodb-table-name DYNAMODB_TABLE_NAME [[--aws-profile AWS_PROFILE] | [--aws-access-key-id AWS_ACCESS_KEY_ID --aws-secret-access-key AWS_SECRET_ACCESS_KEY]] [--aws-region AWS_REGION] [--aws-endpoint-url AWS_ENDPOINT_URL] [--aws-no-verify-ssl] [--aws-ca-bundle AWS_CA_BUNDLE] --cb-cluster CB_CLUSTER (--cb-username CB_USERNAME --cb-password CB_PASSWORD | --cb-client-cert CB_CLIENT_CERT [--cb-client-cert-password CB_CLIENT_CERT_PASSWORD] [--cb-client-key CB_CLIENT_KEY] [--cb-client-key-password CB_CLIENT_KEY_PASSWORD]) [--cb-cacert CB_CACERT] [--cb-no-ssl-verify] [--cb-bucket CB_BUCKET] [--cb-scope CB_SCOPE] [--cb-collection CB_COLLECTION] [--cb-batch-size CB_BATCH_SIZE] [--keep-primary-key] [--hash-document-key sha256,sha512] [--debug] [--cb-generate-key CB_GENERATE_KEY] [--copy-indexes] [--buffer-size BUFFER_SIZE] [--help HELP]
 ```
 
 ## Aliases
@@ -73,6 +73,7 @@ cbmigrate dynamodb --dynamodb-table-name da-test-2 --cb-cluster url --cb-usernam
 - `--dynamodb-table-name string`: The name of the table containing the requested item. You can also provide the Amazon Resource Name (ARN) of the table in this parameter.
 - `-h, --help`: Help for DynamoDB.
 - `--hash-document-key string`: Hash the couchbase document key. One of sha256,sha512
+- `--keep-primary-key`: Keep the non-composite primary key in the document. By default, if the key is a non-composite primary key, it is deleted from the document unless this flag is set.
 
 ## Note
 All AWS SDK environment configurations are supported. Click [here](https://docs.aws.amazon.com/sdkref/latest/guide/environment-variables.html) for more info.
