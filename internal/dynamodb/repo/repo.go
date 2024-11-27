@@ -14,7 +14,7 @@ import (
 
 type IRepo interface {
 	Init(opts *option.Options) error
-	NewPaginator() IPaginator
+	NewPaginator(segment int32, totalSegments int32, limit int32) IPaginator
 	GetIndexes(ctx context.Context) ([]Index, error)
 	GetPrimaryIndex(ctx context.Context) (Index, error)
 }
@@ -45,10 +45,16 @@ func (r *Repo) Init(opts *option.Options) error {
 	return r.svc.Init(opts)
 }
 
-func (r *Repo) NewPaginator() IPaginator {
-	return dynamodb.NewScanPaginator(r.svc, &dynamodb.ScanInput{
-		TableName: aws.String(r.TableName),
-	})
+func (r *Repo) NewPaginator(segment int32, totalSegments int32, limit int32) IPaginator {
+	si := &dynamodb.ScanInput{
+		TableName:     aws.String(r.TableName),
+		Segment:       &segment,
+		TotalSegments: &totalSegments,
+	}
+	if limit > 0 {
+		si.Limit = &limit
+	}
+	return dynamodb.NewScanPaginator(r.svc, si)
 }
 
 func (r *Repo) GetIndexes(ctx context.Context) ([]Index, error) {

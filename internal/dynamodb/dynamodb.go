@@ -2,11 +2,12 @@ package dynamodb
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"strings"
-
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"go.uber.org/zap"
+	"strings"
+	"sync"
 
 	"github.com/couchbaselabs/cbmigrate/internal/common"
 	"github.com/couchbaselabs/cbmigrate/internal/dynamodb/option"
@@ -18,6 +19,8 @@ type DynamoDB struct {
 	db          repo.IRepo
 	CopyIndexes bool
 	documentKey common.ICBDocumentKey
+	segments    int
+	limit       int
 }
 
 func NewDynamoDB(db repo.IRepo) common.ISource[option.Options] {
@@ -51,18 +54,50 @@ func (d *DynamoDB) Init(opts *option.Options, documentKey common.ICBDocumentKey)
 
 func (d *DynamoDB) StreamData(ctx context.Context, mChan chan map[string]interface{}) error {
 	defer close(mChan)
-	var err error
-	paginator := d.db.NewPaginator()
+
+	errChan := make(chan error, d.segments)
+	var wg sync.WaitGroup
+	dCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	for segment := 0; segment < d.segments; segment++ {
+		wg.Add(1)
+		go func(segment int) {
+			defer wg.Done()
+			err := d.parallelScanSegment(dCtx, segment, mChan)
+			if err != nil {
+				sync.OnceFunc(func() {
+					cancel()
+				})
+				errChan <- err
+			}
+		}(segment)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	var errs []error
+	for err := range errChan {
+		errs = append(errs, err)
+	}
+	zap.L().Debug(errors.Join(errs...).Error())
+	if errs != nil {
+		return errs[0]
+	}
+	return nil
+}
+
+func (d *DynamoDB) parallelScanSegment(ctx context.Context, segment int, mChan chan map[string]interface{}) error {
+	paginator := d.db.NewPaginator(int32(segment), int32(d.segments), int32(d.limit))
 	for paginator.HasMorePages() {
-		var output *dynamodb.ScanOutput
-		output, err = paginator.NextPage(ctx)
+		output, err := paginator.NextPage(ctx)
 		if err != nil {
 			return err
 		}
 		var records []map[string]interface{}
 		err = attributevalue.UnmarshalListOfMaps(output.Items, &records)
 		if err != nil {
-			return fmt.Errorf("error unmarshalling records %w", err)
+			return fmt.Errorf("error unmarshalling records in segment %d: %w", segment, err)
 		}
 		for _, record := range records {
 			mChan <- record
