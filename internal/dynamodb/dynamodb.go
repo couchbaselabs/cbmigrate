@@ -80,8 +80,8 @@ func (d *DynamoDB) StreamData(ctx context.Context, mChan chan map[string]interfa
 	for err := range errChan {
 		errs = append(errs, err)
 	}
-	zap.L().Debug(errors.Join(errs...).Error())
 	if errs != nil {
+		zap.L().Debug(errors.Join(errs...).Error())
 		return errs[0]
 	}
 	return nil
