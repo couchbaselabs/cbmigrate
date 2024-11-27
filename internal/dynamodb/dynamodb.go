@@ -31,6 +31,8 @@ func NewDynamoDB(db repo.IRepo) common.ISource[option.Options] {
 
 func (d *DynamoDB) Init(opts *option.Options, documentKey common.ICBDocumentKey) error {
 	d.documentKey = documentKey
+	d.segments = opts.Segments
+	d.limit = opts.Limit
 	err := d.db.Init(opts)
 	if err != nil {
 		return err

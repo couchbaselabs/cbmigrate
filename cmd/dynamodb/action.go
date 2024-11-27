@@ -55,6 +55,8 @@ func (a *Action) RunE(cmd *cobra.Command, args []string) (err error) {
 	dopts.SecretKey, _ = cmd.Flags().GetString(command.DynamoDBSecretKey)
 	dopts.Region, _ = cmd.Flags().GetString(command.DynamoDBRegion)
 	dopts.CABundle, _ = cmd.Flags().GetString(command.DynamoDBCaBundle)
+	dopts.Segments, _ = cmd.Flags().GetInt(command.DynamoDBSegments)
+	dopts.Limit, _ = cmd.Flags().GetInt(command.DynamoDBLimit)
 	insecure, _ := cmd.Flags().GetBool(command.DynamoDBNoVerifySSL)
 	dopts.NoSSLVerify = insecure
 
