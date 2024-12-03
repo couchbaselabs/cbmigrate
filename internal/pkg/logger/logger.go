@@ -37,3 +37,7 @@ func Init() {
 func EnableDebugLevel() {
 	atomicLevel.SetLevel(zap.DebugLevel)
 }
+
+func EnableErrorLevel() {
+	atomicLevel.SetLevel(zap.ErrorLevel)
+}

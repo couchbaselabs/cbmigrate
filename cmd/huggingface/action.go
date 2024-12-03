@@ -25,15 +25,12 @@ const (
 )
 
 func downloadAndExtract(destDir string, releaseTag string) error {
-	// Define the GitHub repo
-	owner := "Couchbase-Ecosystem"
-	repo := "hf-to-cb-dataset-migrator"
 
 	ctx := context.Background()
 	client := github.NewClient(nil)
 
 	// Get the specified release
-	release, _, err := client.Repositories.GetReleaseByTag(ctx, owner, repo, releaseTag)
+	release, _, err := client.Repositories.GetReleaseByTag(ctx, repoOwner, repoName, releaseTag)
 	if err != nil {
 		return err
 	}
@@ -59,12 +56,11 @@ func downloadAndExtract(destDir string, releaseTag string) error {
 			break
 		}
 	}
-	fmt.Println(expectedAssetName)
 	if assetURL == "" {
 		return fmt.Errorf("asset not found for Release: %s, OS: %s, Arch: %s, ", strings.TrimLeft(releaseTag, "v"), goos, goarch)
 	}
 
-	zap.S().Warn("Downloading asset: %s\n", assetURL)
+	zap.S().Warnf("Downloading asset: %s\n", assetURL)
 
 	// Download the asset
 	resp, err := http.Get(assetURL)
@@ -77,7 +73,7 @@ func downloadAndExtract(destDir string, releaseTag string) error {
 		return fmt.Errorf("failed to download asset: %s", resp.Status)
 	}
 
-	// Create temporary file
+	// Create a temporary file
 	tmpFile, err := os.CreateTemp("", binaryName+"_download_*")
 	if err != nil {
 		return err
@@ -116,22 +112,24 @@ func downloadAndExtract(destDir string, releaseTag string) error {
 
 func extractZipWithCommand(zipPath, destDir string) error {
 	cmd := exec.Command("unzip", zipPath, "-d", destDir)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
+	output, err := cmd.Output()
+	if err != nil {
+		zap.S().Errorf("%s", string(output))
 		return fmt.Errorf("failed to extract zip: %w", err)
+	} else {
+		zap.S().Warn(string(output))
 	}
 	return nil
 }
 
 func extractTarGzWithCommand(tarGzPath, destDir string) error {
 	cmd := exec.Command("tar", "-xzvf", tarGzPath, "-C", destDir)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to extract tar.gz: %w", err)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		zap.S().Errorf("%s", string(output))
+		return fmt.Errorf("failed to extract zip: %w", err)
+	} else {
+		zap.S().Warn(string(output))
 	}
 	return nil
 }
@@ -162,12 +160,14 @@ func ensureBinary() (string, error) {
 }
 
 func GetHuggingFaceMigrateCommand() *cobra.Command {
-	logger.EnableDebugLevel()
 	cmd := command.NewCommand()
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		// Create the command to execute
-		fmt.Println(args)
+		jsonOutputPreset := isJsonOutputPreset(args)
+		if jsonOutputPreset {
+			logger.EnableErrorLevel()
+		}
 		binaryPath, err := ensureBinary()
 		if err != nil {
 			return err
@@ -185,6 +185,10 @@ func GetHuggingFaceMigrateCommand() *cobra.Command {
 		return nil
 	}
 	cmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		jsonOutputPreset := isJsonOutputPreset(args)
+		if jsonOutputPreset {
+			logger.EnableErrorLevel()
+		}
 		binaryPath, err := ensureBinary()
 		if err != nil {
 			zap.S().Fatal(err)
@@ -202,4 +206,13 @@ func GetHuggingFaceMigrateCommand() *cobra.Command {
 		}
 	})
 	return cmd
+}
+
+func isJsonOutputPreset(arg []string) bool {
+	for _, arg := range arg {
+		if arg == "--json-output" {
+			return true
+		}
+	}
+	return false
 }

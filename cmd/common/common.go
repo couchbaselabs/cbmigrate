@@ -9,6 +9,6 @@ const (
 func GetDebugFlag() flag.Flag {
 	return &flag.BoolFlag{
 		Name:  Debug,
-		Usage: "enable debug output.",
+		Usage: "Enable debug output.",
 	}
 }
