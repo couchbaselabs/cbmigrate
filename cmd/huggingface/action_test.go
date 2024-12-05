@@ -3,7 +3,7 @@ package huggingface_test
 import (
 	"bytes"
 	"encoding/json"
-	code "fmt"
+	"fmt"
 	"os"
 
 	"github.com/couchbaselabs/cbmigrate/cmd/common"
