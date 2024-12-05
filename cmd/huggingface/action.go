@@ -159,49 +159,40 @@ func ensureBinary() (string, error) {
 	return binaryPath, nil
 }
 
+func executeHuggingFaceCommand(args []string) error {
+	binaryPath, err := ensureBinary()
+	if err != nil {
+		return err
+	}
+
+	execCmd := exec.Command(binaryPath, args...)
+	execCmd.Stdout = os.Stdout
+	execCmd.Stderr = os.Stderr
+
+	return execCmd.Run()
+}
+
 func GetHuggingFaceMigrateCommand() *cobra.Command {
 	cmd := command.NewCommand()
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		// Create the command to execute
-		jsonOutputPreset := isJsonOutputPreset(args)
-		if jsonOutputPreset {
+		if isJsonOutputPreset(args) {
 			logger.EnableErrorLevel()
 		}
-		binaryPath, err := ensureBinary()
-		if err != nil {
-			return err
-		}
-		execCmd := exec.Command(binaryPath, args...)
 
-		// Set up output
-		execCmd.Stdout = os.Stdout
-		execCmd.Stderr = os.Stderr
-
-		// Run the command
-		if err := execCmd.Run(); err != nil {
-			zap.S().Fatal(fmt.Errorf("error executing binary: %w", err))
+		if err := executeHuggingFaceCommand(args); err != nil {
+			return fmt.Errorf("error executing binary: %w", err)
 		}
 		return nil
 	}
+
 	cmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		jsonOutputPreset := isJsonOutputPreset(args)
-		if jsonOutputPreset {
+		if isJsonOutputPreset(args) {
 			logger.EnableErrorLevel()
 		}
-		binaryPath, err := ensureBinary()
-		if err != nil {
-			zap.S().Fatal(err)
-		}
-		cmdArgs := args[1:len(args)]
-		execCmd := exec.Command(binaryPath, cmdArgs...)
 
-		// Set up output
-		execCmd.Stdout = os.Stdout
-		execCmd.Stderr = os.Stderr
-
-		// Run the command
-		if err := execCmd.Run(); err != nil {
+		cmdArgs := args[1:]
+		if err := executeHuggingFaceCommand(cmdArgs); err != nil {
 			zap.S().Fatal(fmt.Errorf("error executing binary: %w", err))
 		}
 	})

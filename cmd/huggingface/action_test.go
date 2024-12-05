@@ -3,11 +3,14 @@ package huggingface_test
 import (
 	"bytes"
 	"encoding/json"
+	code "fmt"
+	"os"
+
 	"github.com/couchbaselabs/cbmigrate/cmd/common"
 	"github.com/couchbaselabs/cbmigrate/cmd/huggingface"
 	"github.com/couchbaselabs/cbmigrate/internal/pkg/logger"
 	"github.com/spf13/cobra"
-	"os"
+	"go.uber.org/zap"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,10 +19,18 @@ import (
 type OutputCapturer struct {
 	originalStdout *os.File
 	originalStderr *os.File
-	stdoutReader   *os.File
-	stdoutWriter   *os.File
-	stderrReader   *os.File
-	stderrWriter   *os.File
+	//stdoutReader   *os.File
+	stdoutWriter *os.File
+	stdoutBuf    struct {
+		buffer bytes.Buffer
+		err    error
+	}
+	stderrBuf struct {
+		buffer bytes.Buffer
+		err    error
+	}
+	//stderrReader *os.File
+	stderrWriter *os.File
 }
 
 func NewOutputCapturer() *OutputCapturer {
@@ -28,18 +39,18 @@ func NewOutputCapturer() *OutputCapturer {
 
 func (c *OutputCapturer) Start() error {
 	var err error
-
+	var stdoutReader, stderrReader *os.File
 	// Save original outputs
 	c.originalStdout = os.Stdout
 	c.originalStderr = os.Stderr
 
 	// Create pipes for capturing output
-	c.stdoutReader, c.stdoutWriter, err = os.Pipe()
+	stdoutReader, c.stdoutWriter, err = os.Pipe()
 	if err != nil {
 		return err
 	}
 
-	c.stderrReader, c.stderrWriter, err = os.Pipe()
+	stderrReader, c.stderrWriter, err = os.Pipe()
 	if err != nil {
 		return err
 	}
@@ -48,10 +59,19 @@ func (c *OutputCapturer) Start() error {
 	os.Stdout = c.stdoutWriter
 	os.Stderr = c.stderrWriter
 
+	// Read captured output
+	go func() {
+		_, c.stdoutBuf.err = c.stdoutBuf.buffer.ReadFrom(stdoutReader)
+	}()
+	go func() {
+		_, c.stderrBuf.err = c.stderrBuf.buffer.ReadFrom(stderrReader)
+	}()
+
 	return nil
 }
 
 func (c *OutputCapturer) Stop() (string, string, error) {
+	zap.L().Sync()
 	// Restore original outputs
 	os.Stdout = c.originalStdout
 	os.Stderr = c.originalStderr
@@ -60,19 +80,10 @@ func (c *OutputCapturer) Stop() (string, string, error) {
 	c.stdoutWriter.Close()
 	c.stderrWriter.Close()
 
-	// Read captured output
-	var stdoutBuf, stderrBuf bytes.Buffer
-	_, err := stdoutBuf.ReadFrom(c.stdoutReader)
-	if err != nil {
-		return "", "", err
+	if c.stdoutBuf.err != nil || c.stderrBuf.err != nil {
+		return "", "", fmt.Errorf("error reading from stdout or stderr: %v, %v", c.stdoutBuf.err, c.stderrBuf.err)
 	}
-
-	_, err = stderrBuf.ReadFrom(c.stderrReader)
-	if err != nil {
-		return "", "", err
-	}
-
-	return stdoutBuf.String(), stderrBuf.String(), nil
+	return c.stdoutBuf.buffer.String(), c.stderrBuf.buffer.String(), nil
 }
 
 var _ = Describe("Huggingface", func() {
@@ -95,9 +106,10 @@ var _ = Describe("Huggingface", func() {
 			err := oc.Start()
 			logger.Init()
 			Expect(err).NotTo(HaveOccurred())
-			_, err = common.ExecuteCommand(cmd, "list-configs", "--path", "path")
+			_, err = common.ExecuteCommand(cmd, "list-configs", "--path", "path", "--json-output")
 			Expect(err).NotTo(HaveOccurred())
 			output, errorOutput, err := oc.Stop()
+			Expect(err).NotTo(HaveOccurred())
 			Expect(errorOutput).To(BeEmpty())
 			var jsonOutput = map[string]interface{}{}
 			err = json.Unmarshal([]byte(output), &jsonOutput)
@@ -111,7 +123,7 @@ var _ = Describe("Huggingface", func() {
 				"dynamic_modules_path": nil,
 				"data_files":           []interface{}{},
 				"token":                nil,
-				"json_output":          false,
+				"json_output":          true,
 				"debug":                false,
 			}), "'options' should be a list")
 		})

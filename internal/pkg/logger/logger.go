@@ -29,7 +29,6 @@ func Init() {
 	if err != nil {
 		panic(err)
 	}
-	defer logger.Sync()
 	// Replace the global logger.
 	zap.ReplaceGlobals(logger)
 }
