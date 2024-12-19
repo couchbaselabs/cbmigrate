@@ -3,11 +3,6 @@ package huggingface
 import (
 	"context"
 	"fmt"
-	"github.com/couchbaselabs/cbmigrate/cmd/huggingface/command"
-	"github.com/couchbaselabs/cbmigrate/internal/pkg/logger"
-	"github.com/google/go-github/v66/github"
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"os"
@@ -15,6 +10,12 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/couchbaselabs/cbmigrate/cmd/huggingface/command"
+	"github.com/couchbaselabs/cbmigrate/internal/pkg/logger"
+	"github.com/google/go-github/v66/github"
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 const (
@@ -168,7 +169,7 @@ func executeHuggingFaceCommand(args []string) error {
 	execCmd := exec.Command(binaryPath, args...)
 	execCmd.Stdout = os.Stdout
 	execCmd.Stderr = os.Stderr
-
+	execCmd.Env = []string{"RUN_FROM_CBMIGRATE=true"}
 	return execCmd.Run()
 }
 

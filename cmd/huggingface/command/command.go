@@ -25,6 +25,8 @@ Use --help to see available options.`
 	)
 
 	// Disable flag parsing since we pass flags to the underlying binary
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
 	cmd.DisableFlagParsing = true
 
 	return cmd
