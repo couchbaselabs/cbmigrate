@@ -1,6 +1,6 @@
 package repo
 
-//go:generate mockgen -source=repo.go -destination=../../../testhelper/mock/dynamodb_repo.go -package=mock_test -mock_names=IRepo=MockDynamoDbIRepo,IPaginator=MockDynamoDbIPaginator IRepo IPaginator
+//go:generate mockgen -source=repo.go -destination=../../../testhelper/mock/dynamodb_repo.go -package=mock -mock_names=IRepo=MockDynamoDbIRepo,IPaginator=MockDynamoDbIPaginator IRepo IPaginator
 
 import (
 	"context"

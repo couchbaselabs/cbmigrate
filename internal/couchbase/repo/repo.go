@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-//go:generate mockgen -source=repo.go -destination=../../../testhelper/mock/cb_repo.go -package=mock_test -mock_names=IRepo=MockCouchbaseIRepo IRepo
+//go:generate mockgen -source=repo.go -destination=../../../testhelper/mock/cb_repo.go -package=mock -mock_names=IRepo=MockCouchbaseIRepo IRepo
 
 type IRepo interface {
 	Init(uri string, opts *option.Options) error

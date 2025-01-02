@@ -9,7 +9,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-//go:generate mockgen -source=migrater.go -destination=../../testhelper/mock/migrater.go -package=mock_test IMigrate
+//go:generate mockgen -source=migrater.go -destination=../../testhelper/mock/migrater.go -package=mock IMigrate
 type IMigrate[Options any] interface {
 	Copy(mOpts *Options, cbOpts *option.Options, copyIndexes bool, bufferSize int) error
 }

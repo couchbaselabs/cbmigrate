@@ -1,6 +1,6 @@
 package mongo
 
-//go:generate mockgen -source=analyzer.go -destination=../../testhelper/mock/mongo_analyzer.go -package=mock_test Analyzer
+//go:generate mockgen -source=analyzer.go -destination=../../testhelper/mock/mongo_analyzer.go -package=mock Analyzer
 
 import (
 	"fmt"

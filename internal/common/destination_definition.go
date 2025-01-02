@@ -1,6 +1,6 @@
 package common
 
-//go:generate mockgen -source=destination_definition.go -destination=../../testhelper/mock/destination_definition.go -package=mock_test IDestination
+//go:generate mockgen -source=destination_definition.go -destination=../../testhelper/mock/destination_definition.go -package=mock IDestination
 
 import (
 	"github.com/couchbaselabs/cbmigrate/internal/couchbase/option"
