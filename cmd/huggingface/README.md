@@ -27,9 +27,12 @@ Flags:
 - `--revision`: Version of the dataset script to load
 - `--download-config`: Specific download configuration parameters
 - `--download-mode`: Download mode (reuse_dataset_if_exists or force_redownload)
+- `--dynamic-modules-path`: Path to dynamic modules
+- `--data-files`: Path(s) to source data file(s)
 - `--token`: Authentication token for private datasets
 - `--json-output`: Output the configurations in JSON format
 - `--debug`: Enable debug output
+- `--trust-remote-code`: Allow loading arbitrary code from the dataset repository
 
 ### 2. List Splits
 
@@ -44,9 +47,13 @@ Flags:
 - `--path`: Path or name of the dataset (required)
 - `--name`: Configuration name of the dataset
 - `--data-files`: Path(s) to source data file(s)
+- `--download-config`: Specific download configuration parameters
+- `--download-mode`: Download mode (reuse_dataset_if_exists or force_redownload)
+- `--revision`: Version of the dataset script to load
 - `--token`: Authentication token for private datasets
 - `--json-output`: Output the splits in JSON format
 - `--debug`: Enable debug output
+- `--trust-remote-code`: Allow loading arbitrary code from the dataset repository
 
 ### 3. List Fields
 
@@ -61,10 +68,13 @@ Flags:
 - `--path`: Path or name of the dataset (required)
 - `--name`: Name of the dataset configuration
 - `--data-files`: Paths to source data files
+- `--download-config`: Specific download configuration parameters
 - `--revision`: Version of the dataset script to load
-- `--token`: Authentication token for private datasets
+- `--token`: Hugging Face token for private datasets
+- `--split`: Which split of the data to load
 - `--json-output`: Output the fields in JSON format
 - `--debug`: Enable debug output
+- `--trust-remote-code`: Allow loading arbitrary code from the dataset repository
 
 ### 4. Migrate Dataset
 
@@ -91,10 +101,12 @@ Flags:
 - `--cb-password`: Couchbase password (required)
 - `--cb-bucket`: Couchbase bucket name (required)
 - `--cb-scope`: Couchbase scope name (required)
+- `--cb-collection`: Couchbase collection name
 - `--name`: Configuration name of the dataset
 - `--data-files`: Path(s) to source data file(s)
 - `--split`: Which split of the data to load
 - `--cache-dir`: Cache directory for datasets
+- `--download-config`: Specific download configuration parameters
 - `--download-mode`: Download mode (reuse_dataset_if_exists or force_redownload)
 - `--verification-mode`: Verification mode (no_checks, basic_checks, or all_checks)
 - `--keep-in-memory`: Keep dataset in memory
@@ -103,8 +115,8 @@ Flags:
 - `--token`: Authentication token for private datasets
 - `--no-streaming`: Disable streaming mode
 - `--num-proc`: Number of processes to use
-- `--trust-remote-code`: Allow execution of remote code
-- `--cb-collection`: Couchbase collection name
+- `--storage-options`: Storage options for remote filesystems
+- `--trust-remote-code`: Allow loading arbitrary code from the dataset repository
 - `--cb-batch-size`: Number of documents to insert per batch (default: 1000)
 - `--debug`: Enable debug output
 
