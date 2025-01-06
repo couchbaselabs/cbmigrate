@@ -29,11 +29,14 @@ func Init() {
 	if err != nil {
 		panic(err)
 	}
-	defer logger.Sync()
 	// Replace the global logger.
 	zap.ReplaceGlobals(logger)
 }
 
 func EnableDebugLevel() {
 	atomicLevel.SetLevel(zap.DebugLevel)
+}
+
+func EnableErrorLevel() {
+	atomicLevel.SetLevel(zap.ErrorLevel)
 }

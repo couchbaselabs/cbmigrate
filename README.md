@@ -12,6 +12,10 @@ Currently, cbmigrate supports migrating data from the following source database:
 
   For DynamoDB migration, cbmigrate provides a specific subcommand. For detailed information on how to use this subcommand, including available options and examples, please refer to the [Dynamodb subcommand README](cmd/dynamodb/README.md).
 
+- **HuggingFace**
+
+  For HuggingFace migration, cbmigrate provides a specific subcommand. For detailed information on how to use this subcommand, including available options and examples, please refer to the [HuggingFace subcommand README](cmd/huggingface/README.md).
+
 ## Usage
 ```
 cbmigrate [--version] [--help HELP]
