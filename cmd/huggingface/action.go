@@ -170,6 +170,9 @@ func executeHuggingFaceCommand(args []string) error {
 	execCmd.Stdout = os.Stdout
 	execCmd.Stderr = os.Stderr
 	execCmd.Env = []string{"RUN_FROM_CBMIGRATE=true"}
+	if os.Getenv("MOCK_CLI_FOR_CBMIGRATE") == "true" {
+		execCmd.Env = append(execCmd.Env, "MOCK_CLI_FOR_CBMIGRATE=true")
+	}
 	return execCmd.Run()
 }
 

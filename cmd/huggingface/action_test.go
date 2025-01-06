@@ -125,6 +125,7 @@ var _ = Describe("Huggingface", func() {
 				"token":                nil,
 				"json_output":          true,
 				"debug":                false,
+				"trust_remote_code":    nil,
 			}), "'options' should be a list")
 		})
 	})
