@@ -22,9 +22,9 @@ var repoIndexes = []repo.Index{
 		Keys: []string{"id"},
 	},
 }
-var _ = Describe("mongo service", func() {
+var _ = Describe("DynamoDB service", func() {
 	docKey := common.NewCBDocumentKey()
-	Describe("test mongoService streaming", func() {
+	Describe("test DynamoDB streaming", func() {
 		var (
 			ctrl            *gomock.Controller
 			db              *mocktest.MockDynamoDbIRepo
@@ -38,6 +38,7 @@ var _ = Describe("mongo service", func() {
 			Profile:     "aws-temp-profile",
 			Region:      "us-east-1",
 			CABundle:    "path",
+			Segments:    1,
 		}
 		testData := []map[string]interface{}{{"a": 1.0}, {"b": 1.0}, {"c": 1.0}}
 		BeforeEach(func() {
@@ -57,16 +58,13 @@ var _ = Describe("mongo service", func() {
 				err := dynamodbService.Init(opts, docKey)
 				Expect(err).To(BeNil())
 				Expect(docKey.GetKey()).To(Equal([]common.DocumentKeyPart{{Kind: common.DkField, Value: "id"}}))
-				db.EXPECT().NewPaginator().Return(paginator)
+				db.EXPECT().NewPaginator(int32(0), int32(1), int32(0)).Return(paginator)
 				i := -1
 				paginator.EXPECT().HasMorePages().Times(4).DoAndReturn(func() bool {
 					i++
-					if i == 3 {
-						return false
-					}
-					return true
+					return i != 3
 				})
-				paginator.EXPECT().NextPage(ctx).Times(3).DoAndReturn(func(ctx context.Context, optFns ...func(*dynamodb2.Options)) (*dynamodb2.ScanOutput, error) {
+				paginator.EXPECT().NextPage(gomock.Any()).Times(3).DoAndReturn(func(ctx context.Context, optFns ...func(*dynamodb2.Options)) (*dynamodb2.ScanOutput, error) {
 					var items []map[string]types.AttributeValue
 					item, err := attributevalue.MarshalMap(&testData[i])
 					if err != nil {
@@ -106,7 +104,7 @@ var _ = Describe("mongo service", func() {
 				err := dynamodbService.Init(opts, docKey)
 				Expect(err).To(BeNil())
 				ctx := context.Background()
-				db.EXPECT().NewPaginator().Return(paginator)
+				db.EXPECT().NewPaginator(int32(0), int32(1), int32(0)).Return(paginator)
 				i := -1
 				paginator.EXPECT().HasMorePages().Times(2).DoAndReturn(func() bool {
 					i++
@@ -115,7 +113,7 @@ var _ = Describe("mongo service", func() {
 					}
 					return true
 				})
-				paginator.EXPECT().NextPage(ctx).Times(2).DoAndReturn(func(ctx context.Context, optFns ...func(*dynamodb2.Options)) (*dynamodb2.ScanOutput, error) {
+				paginator.EXPECT().NextPage(gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, optFns ...func(*dynamodb2.Options)) (*dynamodb2.ScanOutput, error) {
 					var items []map[string]types.AttributeValue
 					item, _ := attributevalue.MarshalMap(&testData[i])
 					items = append(items, item)

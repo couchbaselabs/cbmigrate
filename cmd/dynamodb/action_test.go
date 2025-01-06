@@ -111,6 +111,7 @@ var _ = Describe("mongo", func() {
 					Profile:     dynamoDBProfile,
 					Region:      dynamoDBRegion,
 					CABundle:    dynamoDBCaBundle,
+					Segments:    1,
 				}
 				expectedCbOpts := &option.Options{
 					Cluster: cbCluster,
@@ -154,6 +155,7 @@ var _ = Describe("mongo", func() {
 				Expect(err).To(BeNil())
 				expectedDopts := &dOpts.Options{
 					TableName: dynamoDBTableName,
+					Segments:  1,
 				}
 				expectedCbOpts := &option.Options{
 					Cluster: cbCluster,
@@ -201,6 +203,7 @@ var _ = Describe("mongo", func() {
 					TableName: dynamoDBTableName,
 					AccessKey: dynamoDBAccessKey,
 					SecretKey: dynamoDBSecretKey,
+					Segments:  1,
 				}
 				expectedCbOpts := &option.Options{
 					Cluster: cbCluster,

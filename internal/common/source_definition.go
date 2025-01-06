@@ -1,6 +1,6 @@
 package common
 
-//go:generate mockgen -source=source_definition.go -destination=../../testhelper/mock/source_definition.go -package=mock_test ISource
+//go:generate mockgen -source=source_definition.go -destination=../../testhelper/mock/source_definition.go -package=mock ISource
 import (
 	"context"
 )

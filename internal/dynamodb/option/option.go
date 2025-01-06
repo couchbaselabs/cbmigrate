@@ -9,4 +9,6 @@ type Options struct {
 	SecretKey   string
 	Region      string
 	CABundle    string
+	Segments    int
+	Limit       int
 }

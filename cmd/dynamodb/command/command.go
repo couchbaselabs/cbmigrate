@@ -15,6 +15,8 @@ const (
 	DynamoDBRegion      = "aws-region"
 	DynamoDBCaBundle    = "aws-ca-bundle"
 	DynamoDBTableName   = "dynamodb-table-name"
+	DynamoDBSegments    = "dynamodb-segments"
+	DynamoDBLimit       = "dynamodb-limit"
 )
 
 var dynamoDBEndpointURL = &flag.StringFlag{
@@ -60,6 +62,21 @@ var dynamoDBTableName = &flag.StringFlag{
 	Required: true,
 }
 
+var dynamoDBSegments = &flag.IntFlag{
+	Name:  DynamoDBSegments,
+	Value: 1,
+	Usage: "Specifies the total number of segments to divide the DynamoDB table into for parallel scanning. Each segment is scanned independently, " +
+		"allowing multiple threads or processes to work concurrently for faster data retrieval. Use this option to optimize performance for large tables." +
+		"By default entire table is scanned sequentially without segmentation",
+}
+
+var dynamoDBLimit = &flag.IntFlag{
+	Name: DynamoDBLimit,
+	Usage: "Specifies the maximum number of items to retrieve per page during a scan operation. " +
+		"Use this option to control the amount of data fetched in a single request, " +
+		"helping to manage memory usage and API call rates during scanning.",
+}
+
 func NewCommand() *cobra.Command {
 
 	//short := "A tool to convert time series data in CSV to the one supported by Couchbase."
@@ -82,6 +99,8 @@ func NewCommand() *cobra.Command {
 		dynamoDBEndpointURL,
 		dynamoDBNoVerifySSL,
 		dynamoDBCaBundle,
+		dynamoDBSegments,
+		dynamoDBLimit,
 	}
 	flags = append(flags, common.GetCBFlags()...)
 	flags = append(flags, common.GetCBGenerateKeyOption(""))

@@ -71,6 +71,8 @@ cbmigrate dynamodb --dynamodb-table-name da-test-2 --cb-cluster url --cb-usernam
 - `--copy-indexes`: Copy indexes for the collection (default true).
 - `--debug`: Enable debug output.
 - `--dynamodb-table-name string`: The name of the table containing the requested item. You can also provide the Amazon Resource Name (ARN) of the table in this parameter.
+- `--dynamodb-limit int`: Specifies the maximum number of items to retrieve per page during a scan operation. Helps control memory usage and API call rates. 
+- `--dynamodb-segments int`: Specifies the total number of segments to divide the DynamoDB table into for parallel scanning. Each segment is scanned independently for faster data retrieval. Default is a sequential scan with a single segment (default: 1).
 - `-h, --help`: Help for DynamoDB.
 - `--hash-document-key string`: Hash the couchbase document key. One of sha256,sha512
 - `--keep-primary-key`: Keep the non-composite primary key in the document. By default, if the key is a non-composite primary key, it is deleted from the document unless this flag is set.
