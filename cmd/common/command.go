@@ -11,9 +11,10 @@ import (
 type Command string
 
 const (
-	Mongo     = "mongo"
-	DynamoDB  = "dynamodb"
-	CBMigrate = "cbmigrate"
+	Mongo       = "mongo"
+	DynamoDB    = "dynamodb"
+	CBMigrate   = "cbmigrate"
+	HuggingFace = "hugging-face"
 )
 
 var BetaCommands = []Command{
