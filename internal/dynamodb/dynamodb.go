@@ -90,7 +90,6 @@ func (d *DynamoDB) StreamData(ctx context.Context, mChan chan map[string]interfa
 }
 
 func (d *DynamoDB) parallelScanSegment(ctx context.Context, segment int, mChan chan map[string]interface{}) error {
-	fmt.Println(int32(segment), int32(d.segments), int32(d.limit))
 	paginator := d.db.NewPaginator(int32(segment), int32(d.segments), int32(d.limit))
 	for paginator.HasMorePages() {
 		output, err := paginator.NextPage(ctx)
