@@ -56,10 +56,10 @@ func NewCommand(name Command, alias []string, examples []Example, short string, 
 
 	if slices.Index(BetaCommands, name) > -1 {
 		if short != "" {
-			short = "[Beta] " + short
+			short = short
 		}
 		if long != "" {
-			long = "[Beta] " + long
+			long = long
 		}
 	}
 
