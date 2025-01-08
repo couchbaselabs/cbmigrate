@@ -1,7 +1,6 @@
 package huggingface
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/couchbaselabs/cbmigrate/cmd/huggingface/command"
 	"github.com/couchbaselabs/cbmigrate/internal/pkg/logger"
-	"github.com/google/go-github/v66/github"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -27,15 +25,6 @@ const (
 
 func downloadAndExtract(destDir string, releaseTag string) error {
 
-	ctx := context.Background()
-	client := github.NewClient(nil)
-
-	// Get the specified release
-	release, _, err := client.Repositories.GetReleaseByTag(ctx, repoOwner, repoName, releaseTag)
-	if err != nil {
-		return err
-	}
-
 	// Determine the expected asset name
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
@@ -46,20 +35,10 @@ func downloadAndExtract(destDir string, releaseTag string) error {
 	} else {
 		extension = ".tar.gz"
 	}
-
-	expectedAssetName := fmt.Sprintf("%s_%s_%s_%s%s", binaryName, strings.TrimLeft(releaseTag, "v"), goos, goarch, extension)
-
-	// Find the asset
-	var assetURL string
-	for _, asset := range release.Assets {
-		if asset.GetName() == expectedAssetName {
-			assetURL = asset.GetBrowserDownloadURL()
-			break
-		}
-	}
-	if assetURL == "" {
-		return fmt.Errorf("asset not found for Release: %s, OS: %s, Arch: %s, ", strings.TrimLeft(releaseTag, "v"), goos, goarch)
-	}
+	githubDownloadAssertPrefix := fmt.Sprintf("https://github.com/%s/%s/releases/download/%s", repoOwner,
+		repoName, strings.TrimLeft(releaseTag, "v"))
+	assetURL := fmt.Sprintf("%s/%s_%s_%s_%s%s", githubDownloadAssertPrefix, binaryName,
+		strings.TrimLeft(releaseTag, "v"), goos, goarch, extension)
 
 	zap.S().Warnf("Downloading asset: %s\n", assetURL)
 
