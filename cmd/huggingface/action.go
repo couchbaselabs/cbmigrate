@@ -112,7 +112,7 @@ func downloadAndExtract(destDir string, releaseTag string) error {
 }
 
 func extractZipWithCommand(zipPath, destDir string) error {
-	cmd := exec.Command("unzip", zipPath, "-d", destDir)
+	cmd := exec.Command("tar", "-xzvf", zipPath, "-C", destDir)
 	output, err := cmd.Output()
 	if err != nil {
 		zap.S().Errorf("%s", string(output))
