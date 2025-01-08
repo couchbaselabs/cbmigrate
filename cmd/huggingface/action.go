@@ -36,7 +36,7 @@ func downloadAndExtract(destDir string, releaseTag string) error {
 		extension = ".tar.gz"
 	}
 	githubDownloadAssertPrefix := fmt.Sprintf("https://github.com/%s/%s/releases/download/%s", repoOwner,
-		repoName, strings.TrimLeft(releaseTag, "v"))
+		repoName, releaseTag)
 	assetURL := fmt.Sprintf("%s/%s_%s_%s_%s%s", githubDownloadAssertPrefix, binaryName,
 		strings.TrimLeft(releaseTag, "v"), goos, goarch, extension)
 
