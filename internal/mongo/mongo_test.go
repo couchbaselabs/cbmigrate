@@ -74,9 +74,10 @@ var _ = Describe("mongo service", func() {
 					return nil
 				})
 				cursor.EXPECT().Err().Return(nil)
-
+				an := -1
 				analyzer.EXPECT().AnalyzeData(gomock.Any()).Times(dataCount).DoAndReturn(func(data map[string]interface{}) {
-					reflect.DeepEqual(data, testData[n])
+					an++
+					reflect.DeepEqual(data, testData[an])
 				})
 
 				stream := make(chan map[string]interface{})
