@@ -54,7 +54,7 @@ func downloadAndExtract(destDir string, releaseTag string) error {
 	}
 
 	// Create a temporary file
-	tmpFile, err := os.CreateTemp("", binaryName+"_download_*")
+	tmpFile, err := os.CreateTemp("", binaryName+"_download_*_"+goos+"_"+goarch+extension)
 	if err != nil {
 		return err
 	}
@@ -91,8 +91,10 @@ func downloadAndExtract(destDir string, releaseTag string) error {
 }
 
 func extractZipWithCommand(zipPath, destDir string) error {
-	cmd := exec.Command("tar", "-xzvf", zipPath, "-C", destDir)
-	output, err := cmd.Output()
+	cmd := exec.Command("powershell", "-NoProfile", "-Command",
+		fmt.Sprintf(`Expand-Archive -Path "%s" -DestinationPath "%s" -Force`,
+			zipPath, filepath.Join(destDir, binaryName)))
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		zap.S().Errorf("%s", string(output))
 		return fmt.Errorf("failed to extract zip: %w", err)
