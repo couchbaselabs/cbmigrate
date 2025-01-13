@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/couchbaselabs/cbmigrate/cmd/huggingface/command"
 	"github.com/couchbaselabs/cbmigrate/internal/pkg/logger"
@@ -20,7 +21,7 @@ const (
 	repoOwner  = "Couchbase-Ecosystem"
 	repoName   = "hf-to-cb-dataset-migrator"
 	binaryName = "hf_to_cb_dataset_migrator"
-	releaseTag = "v1.0.0"
+	releaseTag = "v1.0.2"
 )
 
 func downloadAndExtract(destDir string, releaseTag string) error {
@@ -129,14 +130,50 @@ func ensureBinary() (string, error) {
 	}
 	binaryPath := filepath.Join(cbmigrateDir, binaryName, binaryNameWithExt)
 
-	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
-		// Binary doesn't exist, download it
-		zap.S().Warn("Binary not found, downloading...")
+	// Check if binary exists and get its version
+	if _, err := os.Stat(binaryPath); err == nil {
+		// Binary exists, check if it needs updating
+		const maxRetries = 3
+		const retryDelay = 2 * time.Second
 
-		err = downloadAndExtract(cbmigrateDir, releaseTag)
-		if err != nil {
-			return "", err
+		var currentVersion string
+		var versionErr error
+
+		for i := 0; i < maxRetries; i++ {
+			if i > 0 {
+				zap.S().Warnf("Retrying version check (attempt %d/%d)...", i+1, maxRetries)
+				time.Sleep(retryDelay)
+			}
+
+			cmd := exec.Command(binaryPath, "version")
+			output, err := cmd.Output()
+			if err == nil {
+				currentVersion = strings.TrimSpace(string(output))
+				if currentVersion == releaseTag {
+					// Version matches, use existing binary
+					return binaryPath, nil
+				}
+				break // Version retrieved but doesn't match, no need to retry
+			}
+			versionErr = err
 		}
+
+		if versionErr != nil {
+			zap.S().Warnf("Failed to get binary version after %d attempts: %v", maxRetries, versionErr)
+		}
+
+		// Version mismatch or couldn't get version, remove old binary
+		zap.S().Warn("Removing old binary version...")
+		if err := os.RemoveAll(filepath.Join(cbmigrateDir, binaryName)); err != nil {
+			return "", fmt.Errorf("failed to remove old binary: %w", err)
+		}
+	}
+
+	// Binary doesn't exist or was removed, download it
+	zap.S().Warn("Binary not found, downloading...")
+	err = downloadAndExtract(cbmigrateDir, releaseTag)
+	if err != nil {
+		return "", err
 	}
 	return binaryPath, nil
 }
