@@ -2,15 +2,10 @@ package huggingface
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"runtime"
-	"strings"
-	"time"
 
+	"github.com/couchbaselabs/cbmigrate/cmd/common"
 	"github.com/couchbaselabs/cbmigrate/cmd/huggingface/command"
 	"github.com/couchbaselabs/cbmigrate/internal/pkg/logger"
 	"github.com/spf13/cobra"
@@ -24,162 +19,15 @@ const (
 	releaseTag = "v1.0.2"
 )
 
-func downloadAndExtract(destDir string, releaseTag string) error {
-
-	// Determine the expected asset name
-	goos := runtime.GOOS
-	goarch := runtime.GOARCH
-
-	var extension string
-	if goos == "windows" {
-		extension = ".zip"
-	} else {
-		extension = ".tar.gz"
-	}
-	githubDownloadAssertPrefix := fmt.Sprintf("https://github.com/%s/%s/releases/download/%s", repoOwner,
-		repoName, releaseTag)
-	assetURL := fmt.Sprintf("%s/%s_%s_%s_%s%s", githubDownloadAssertPrefix, binaryName,
-		strings.TrimLeft(releaseTag, "v"), goos, goarch, extension)
-
-	zap.S().Warnf("Downloading asset: %s\n", assetURL)
-
-	// Download the asset
-	resp, err := http.Get(assetURL)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to download asset: %s", resp.Status)
-	}
-
-	// Create a temporary file
-	tmpFile, err := os.CreateTemp("", binaryName+"_download_*_"+goos+"_"+goarch+extension)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tmpFile.Name())
-
-	_, err = io.Copy(tmpFile, resp.Body)
-	if err != nil {
-		return err
-	}
-	tmpFile.Close()
-
-	// Extract the binary using command-line tools
-	err = os.MkdirAll(destDir, 0755)
-	if err != nil {
-		return err
-	}
-
-	switch extension {
-	case ".zip":
-		err = extractZipWithCommand(tmpFile.Name(), destDir)
-		if err != nil {
-			return err
-		}
-	case ".tar.gz":
-		err = extractTarGzWithCommand(tmpFile.Name(), destDir)
-		if err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unsupported extension: %s", extension)
-	}
-
-	return nil
-}
-
-func extractZipWithCommand(zipPath, destDir string) error {
-	cmd := exec.Command("powershell", "-NoProfile", "-Command",
-		fmt.Sprintf(`Expand-Archive -Path "%s" -DestinationPath "%s" -Force`,
-			zipPath, filepath.Join(destDir, binaryName)))
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		zap.S().Errorf("%s", string(output))
-		return fmt.Errorf("failed to extract zip: %w", err)
-	} else {
-		zap.S().Warn(string(output))
-	}
-	return nil
-}
-
-func extractTarGzWithCommand(tarGzPath, destDir string) error {
-	cmd := exec.Command("tar", "-xzvf", tarGzPath, "-C", destDir)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		zap.S().Errorf("%s", string(output))
-		return fmt.Errorf("failed to extract zip: %w", err)
-	} else {
-		zap.S().Warn(string(output))
-	}
-	return nil
-}
-
-func ensureBinary() (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-
-	cbmigrateDir := filepath.Join(homeDir, ".cbmigrate")
-	binaryNameWithExt := binaryName
-	if runtime.GOOS == "windows" {
-		binaryNameWithExt += ".exe"
-	}
-	binaryPath := filepath.Join(cbmigrateDir, binaryName, binaryNameWithExt)
-
-	// Check if binary exists and get its version
-	if _, err := os.Stat(binaryPath); err == nil {
-		// Binary exists, check if it needs updating
-		const maxRetries = 3
-		const retryDelay = 2 * time.Second
-
-		var currentVersion string
-		var versionErr error
-
-		for i := 0; i < maxRetries; i++ {
-			if i > 0 {
-				zap.S().Warnf("Retrying version check (attempt %d/%d)...", i+1, maxRetries)
-				time.Sleep(retryDelay)
-			}
-
-			cmd := exec.Command(binaryPath, "version")
-			output, err := cmd.Output()
-			if err == nil {
-				currentVersion = strings.TrimSpace(string(output))
-				if currentVersion == releaseTag {
-					// Version matches, use existing binary
-					return binaryPath, nil
-				}
-				break // Version retrieved but doesn't match, no need to retry
-			}
-			versionErr = err
-		}
-
-		if versionErr != nil {
-			zap.S().Warnf("Failed to get binary version after %d attempts: %v", maxRetries, versionErr)
-		}
-
-		// Version mismatch or couldn't get version, remove old binary
-		zap.S().Warn("Removing old binary version...")
-		if err := os.RemoveAll(filepath.Join(cbmigrateDir, binaryName)); err != nil {
-			return "", fmt.Errorf("failed to remove old binary: %w", err)
-		}
-	}
-
-	// Binary doesn't exist or was removed, download it
-	zap.S().Warn("Binary not found, downloading...")
-	err = downloadAndExtract(cbmigrateDir, releaseTag)
-	if err != nil {
-		return "", err
-	}
-	return binaryPath, nil
-}
-
 func executeHuggingFaceCommand(args []string) error {
-	binaryPath, err := ensureBinary()
+	info := common.BinaryInfo{
+		RepoOwner:  repoOwner,
+		RepoName:   repoName,
+		BinaryName: binaryName,
+		Version:    releaseTag,
+	}
+
+	binaryPath, err := common.EnsureBinary(info)
 	if err != nil {
 		return err
 	}
