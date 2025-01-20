@@ -9,12 +9,12 @@ import (
 )
 
 type CommandConfig struct {
-	Version string `json:"version"`
+	Version     string    `json:"version"`
+	LastUpdated time.Time `json:"last_updated"`
 }
 
 type Config struct {
 	HuggingFace *CommandConfig `json:"hugging_face,omitempty"`
-	LastUpdated time.Time      `json:"last_updated"`
 }
 
 func ReadConfig() (*Config, error) {
@@ -54,7 +54,8 @@ func WriteBinaryConfig(version string, commandType string) error {
 
 	// Update specific command config
 	cmdConfig := &CommandConfig{
-		Version: version,
+		Version:     version,
+		LastUpdated: time.Now(),
 	}
 
 	switch commandType {
@@ -64,9 +65,6 @@ func WriteBinaryConfig(version string, commandType string) error {
 	default:
 		return fmt.Errorf("unknown command type: %s", commandType)
 	}
-
-	// Update last updated time
-	config.LastUpdated = time.Now()
 
 	configPath := filepath.Join(homeDir, ".cbmigrate", "cbmigrate.json")
 
