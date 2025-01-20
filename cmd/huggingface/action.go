@@ -12,19 +12,12 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	repoOwner  = "Couchbase-Ecosystem"
-	repoName   = "hf-to-cb-dataset-migrator"
-	binaryName = "hf_to_cb_dataset_migrator"
-	releaseTag = "v1.0.2"
-)
-
 func executeHuggingFaceCommand(args []string) error {
 	info := common.BinaryInfo{
-		RepoOwner:  repoOwner,
-		RepoName:   repoName,
-		BinaryName: binaryName,
-		Version:    releaseTag,
+		RepoOwner:  common.HuggingFaceRepoOwner,
+		RepoName:   common.HuggingFaceRepoName,
+		BinaryName: common.HuggingFaceBinaryName,
+		Version:    common.HuggingFaceVersion,
 	}
 
 	binaryPath, err := common.EnsureBinary(info)

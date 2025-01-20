@@ -14,7 +14,7 @@ type CommandConfig struct {
 }
 
 type Config struct {
-	HuggingFace *CommandConfig `json:"hugging_face,omitempty"`
+	Commands map[string]*CommandConfig `json:"commands,omitempty"`
 }
 
 func ReadConfig() (*Config, error) {
@@ -27,7 +27,9 @@ func ReadConfig() (*Config, error) {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &Config{}, nil
+			return &Config{
+				Commands: make(map[string]*CommandConfig),
+			}, nil
 		}
 		return nil, err
 	}
@@ -37,10 +39,14 @@ func ReadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	if config.Commands == nil {
+		config.Commands = make(map[string]*CommandConfig)
+	}
+
 	return &config, nil
 }
 
-func WriteBinaryConfig(version string, commandType string) error {
+func WriteBinaryConfig(version string, binaryName string) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return err
@@ -58,13 +64,7 @@ func WriteBinaryConfig(version string, commandType string) error {
 		LastUpdated: time.Now(),
 	}
 
-	switch commandType {
-	case "hugging_face":
-		config.HuggingFace = cmdConfig
-	// Add other command types here
-	default:
-		return fmt.Errorf("unknown command type: %s", commandType)
-	}
+	config.Commands[binaryName] = cmdConfig
 
 	configPath := filepath.Join(homeDir, ".cbmigrate", "cbmigrate.json")
 

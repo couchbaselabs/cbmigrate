@@ -39,9 +39,11 @@ func EnsureBinary(info BinaryInfo) (string, error) {
 		config, err := ReadConfig()
 		if err != nil {
 			zap.S().Warnf("Failed to read config: %v", err)
-		} else if config != nil && config.HuggingFace != nil && config.HuggingFace.Version == info.Version {
-			// Version matches, use existing binary
-			return binaryPath, nil
+		} else if config != nil {
+			if cmdConfig, exists := config.Commands[info.BinaryName]; exists && cmdConfig.Version == info.Version {
+				// Version matches, use existing binary
+				return binaryPath, nil
+			}
 		}
 
 		// Version mismatch or couldn't read config, remove old binary
@@ -59,7 +61,7 @@ func EnsureBinary(info BinaryInfo) (string, error) {
 	}
 
 	// Write the new config since this is either initial setup or version changed
-	if err := WriteBinaryConfig(info.Version, "hugging_face"); err != nil {
+	if err := WriteBinaryConfig(info.Version, info.BinaryName); err != nil {
 		zap.S().Warnf("Failed to write config: %v", err)
 		// Continue even if config write fails
 	}
